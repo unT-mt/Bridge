@@ -207,11 +207,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a330dd279219da4ca29704c1b54add1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  videoPath: file://C:/Users/m-takashima/Desktop/Sample/000.mp4
+  videoPath: Sample/000.mp4
   renderTexture: {fileID: 8400000, guid: cfed2091b795d92499545f42801bab21, type: 2}
-  imagePath001: file://C:/Users/m-takashima/Desktop/Sample/001.png
-  imagePath002: file://C:/Users/m-takashima/Desktop/Sample/002.png
-  imagePath003: file://C:/Users/m-takashima/Desktop/Sample/003.png
+  imagePath001: Sample/001.png
+  imagePath002: Sample/002.png
+  imagePath003: Sample/003.png
 --- !u!1 &580209513
 GameObject:
   m_ObjectHideFlags: 0
