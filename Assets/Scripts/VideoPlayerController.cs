@@ -147,6 +147,7 @@ public class VideoPlayerController : MonoBehaviour
     /// 画像の取得
     /// 現状仮のコーディングのため一旦wwwクラスで動くことを確認
     /// Web通信が不要の場合File.ReadAllBytesで動かすこと検証する
+    /// newは極力減らしていく（メモリリーク対策）
     /// </summary>
     /// <param name="imagePath"></param>
     /// <returns></returns>
