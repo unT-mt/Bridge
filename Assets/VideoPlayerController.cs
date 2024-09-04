@@ -16,6 +16,9 @@ public class VideoPlayerController : MonoBehaviour
     //動画と画像を表示するレンダーテクスチャを指定
     public RenderTexture renderTexture;
 
+    //フェードの持続時間を指定
+    public float fadeDuration = 1.0f;
+
     //自オブジェクトにアタッチするコンポーネント
     private VideoPlayer videoPlayer;
     private RawImage rawImage;
@@ -50,20 +53,69 @@ public class VideoPlayerController : MonoBehaviour
         //キーに対応した処理（現状は仮。今後キーマッピング追加予定（戻る/進む/Topへ））
         if (Input.GetKeyDown(KeyCode.Z))
         {
-            DisplayImage(imagePath001);
+            StartCoroutine(SwitchToImage(imagePath001));
         }
         else if (Input.GetKeyDown(KeyCode.X))
         {
-            DisplayImage(imagePath002);
+            StartCoroutine(SwitchToImage(imagePath002));
         }
         else if (Input.GetKeyDown(KeyCode.C))
         {
-            DisplayImage(imagePath003);
+            StartCoroutine(SwitchToImage(imagePath003));
         }
         else if (Input.GetKeyDown(KeyCode.V))
         {
-            PlayVideo();
+            StartCoroutine(SwitchToVideo());
         }
+    }
+
+    private IEnumerator SwitchToImage(string imagePath)
+    {
+        yield return StartCoroutine(FadeOut());
+
+        // 画像の表示
+        videoPlayer.Stop();
+        StartCoroutine(LoadImage(imagePath));
+
+        yield return StartCoroutine(FadeIn());
+    }
+
+    private IEnumerator SwitchToVideo()
+    {
+        yield return StartCoroutine(FadeOut());
+
+        // 動画の再生
+        PlayVideo();
+
+        yield return StartCoroutine(FadeIn());
+    }
+
+        private IEnumerator FadeOut()
+    {
+        Color color = rawImage.color;
+        for (float t = 0; t < fadeDuration; t += Time.deltaTime)
+        {
+            float normalizedTime = t / fadeDuration;
+            color.a = Mathf.Lerp(1, 0, normalizedTime);
+            rawImage.color = color;
+            yield return null;
+        }
+        color.a = 0;
+        rawImage.color = color;
+    }
+
+    private IEnumerator FadeIn()
+    {
+        Color color = rawImage.color;
+        for (float t = 0; t < fadeDuration; t += Time.deltaTime)
+        {
+            float normalizedTime = t / fadeDuration;
+            color.a = Mathf.Lerp(0, 1, normalizedTime);
+            rawImage.color = color;
+            yield return null;
+        }
+        color.a = 1;
+        rawImage.color = color;
     }
 
     /// <summary>
@@ -81,7 +133,6 @@ public class VideoPlayerController : MonoBehaviour
 
     /// <summary>
     /// 画像を表示する
-    /// 未実装：フェードインアウト
     /// 未実装：表示切替時の効果音
     /// 未実装：所定の時間経過時にTopに戻る（所定の時間はconfigテキストで指定するようにする）
     /// </summary>
@@ -116,6 +167,6 @@ public class VideoPlayerController : MonoBehaviour
     private void OnVideoEnd(VideoPlayer vp)
     {
         // 動画再生終了時に再度再生
-        PlayVideo(); 
+        StartCoroutine(SwitchToVideo());
     }
 }
