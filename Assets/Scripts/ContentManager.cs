@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
@@ -36,10 +37,14 @@ public class ContentManager : MonoBehaviour
     //ファイルをリストで管理し、同時に現在のインデックスを保持する
     private List<ContentAttributes> contentList;
     private int currentIndex = 0;
+    private string currentCategory = "00"; 
 
     //タイムアウトの処理のための変数
     public float timeoutDuration = 60f;
     private float displayTimer;
+
+    //フェード処理のための変数
+    private bool isFading = false;
 
     void Start()
     {
@@ -63,64 +68,74 @@ public class ContentManager : MonoBehaviour
     {
         //タイマーを用意しタイムアウト時にTopへ遷移
         displayTimer += Time.deltaTime;
-        if (displayTimer >= timeoutDuration && !contentList[currentIndex].Top)
+
+        if(!isFading)
         {
-            SwitchToTop();
-        }
-        //物理ボタンに応じた処理
-        if (Input.GetKeyDown(KeyCode.M))
-        {
-            PlaySound();
-            //現在表示しているコンテンツがTopでないなら、次のコンテンツを表示
-            if (currentIndex != 0) SwitchContent("J1", "next");
-        }
-        else if (Input.GetKeyDown(KeyCode.B))
-        {
-            PlaySound();
-            //現在表示しているコンテンツがTopでないなら、前のコンテンツを表示
-            if (currentIndex != 0) SwitchContent("J1", "previous");
-        }
-        else if (Input.GetKeyDown(KeyCode.N))
-        {
-            PlaySound();
-            //Topへ遷移
-            SwitchToTop();
-        }
-        else if (Input.GetKeyDown(KeyCode.F))
-        {
-            PlaySound();
-            SwitchContent("J1", "first");
-            videoPlayer.Stop();
-        }
-        else if (Input.GetKeyDown(KeyCode.G))
-        {
-            PlaySound();
-            SwitchContent("J2", "first");
-            videoPlayer.Stop();
-        }
-        else if (Input.GetKeyDown(KeyCode.H))
-        {
-            PlaySound();
-            SwitchContent("J3", "first");
-            videoPlayer.Stop();
-        }
-        else if (Input.GetKeyDown(KeyCode.I))
-        {
-            PlaySound();
-            SwitchContent("E1", "first");
-            videoPlayer.Stop();
-        }
-        else if (Input.GetKeyDown(KeyCode.J))
-        {
-            PlaySound();
-            SwitchContent("E2", "first");
-            videoPlayer.Stop();
-        }
-        else if (Input.GetKeyDown(KeyCode.K))
-        {
-            PlaySound();
-            SwitchContent("E3", "first");
-            videoPlayer.Stop();
+            if (displayTimer >= timeoutDuration && !contentList[currentIndex].Top)
+            {
+                SwitchToTop();
+            }
+            //物理ボタンに応じた処理
+            if (Input.GetKeyDown(KeyCode.M))
+            {
+                PlaySound();
+                //現在表示しているコンテンツがTopでないなら、次のコンテンツを表示
+                if (currentIndex != 0) SwitchContent(currentCategory, "next");
+            }
+            else if (Input.GetKeyDown(KeyCode.B))
+            {
+                PlaySound();
+                //現在表示しているコンテンツがTopでないなら、前のコンテンツを表示
+                if (currentIndex != 0) SwitchContent(currentCategory, "previous");
+            }
+            else if (Input.GetKeyDown(KeyCode.N))
+            {
+                PlaySound();
+                //Topへ遷移
+                SwitchToTop();
+            }
+            else if (Input.GetKeyDown(KeyCode.F))
+            {
+                PlaySound();
+                SwitchContent("J1", "first");
+                currentCategory = "J1";
+                videoPlayer.Stop();
+            }
+            else if (Input.GetKeyDown(KeyCode.G))
+            {
+                PlaySound();
+                SwitchContent("J2", "first");
+                currentCategory = "J2";
+                videoPlayer.Stop();
+            }
+            else if (Input.GetKeyDown(KeyCode.H))
+            {
+                PlaySound();
+                SwitchContent("J3", "first");
+                currentCategory = "J3";
+                videoPlayer.Stop();
+            }
+            else if (Input.GetKeyDown(KeyCode.I))
+            {
+                PlaySound();
+                SwitchContent("E1", "first");
+                currentCategory = "E1";
+                videoPlayer.Stop();
+            }
+            else if (Input.GetKeyDown(KeyCode.J))
+            {
+                PlaySound();
+                SwitchContent("E2", "first");
+                currentCategory = "E2";
+                videoPlayer.Stop();
+            }
+            else if (Input.GetKeyDown(KeyCode.K))
+            {
+                PlaySound();
+                SwitchContent("E3", "first");
+                currentCategory = "E3";
+                videoPlayer.Stop();
+            }
         }
     }
 
@@ -135,7 +150,7 @@ public class ContentManager : MonoBehaviour
 
         //システムからパスを取得
         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        string[] files = Directory.GetFiles(Path.Combine(desktopPath, "Sample"));
+        string[] files = Directory.GetFiles(Path.Combine(desktopPath, "wwo"));
 
         foreach (var file in files)
         {
@@ -169,18 +184,65 @@ public class ContentManager : MonoBehaviour
     private void SwitchContent(string category, string sequenceType)
     {
         int index = -1;
+        
+        string currentSequence = contentList[currentIndex].Sequence;
+        
         switch (sequenceType)
         {
+            //最初のコンテンツに遷移
             case "first":
                 index = contentList.FindIndex(c => c.Category == category && c.Sequence == "1");
                 break;
+
+            // 前のコンテンツに遷移
             case "previous":
+                // 現在がシーケンス1なら何もしない（先頭なので戻れない）
+                if (currentSequence == "1")
+                {
+                    Debug.Log("Already at the first content, cannot go back.");
+                    return; 
+                }
+                // それ以外は1つ前に移動
                 index = currentIndex - 1;
-                if (index < 0) index = contentList.Count - 1; // 現状は循環する実装
                 break;
+
+            // 次のコンテンツに遷移する場合
             case "next":
-                index = currentIndex + 1;
-                if (index >= contentList.Count) index = 0; // 現状は循環する実装
+                // 現在のカテゴリ内で最大のSequenceを取得
+                Debug.Log("Current category: " + category);
+
+                foreach (var content in contentList.Where(c => c.Category == category))
+                {
+                    Debug.Log("Category: " + content.Category + ", Sequence: " + content.Sequence);
+                }
+
+                int maxSequence = contentList
+                    .Where(c => c.Category == category)
+                    .Max(c => 
+                    {
+                        int sequenceValue = int.Parse(c.Sequence);
+                        Debug.Log("Parsed Sequence: " + sequenceValue);
+                        return sequenceValue;
+                    });
+
+                // 現在のSequenceがカテゴリ内で最大値なら遷移させない
+                if (int.Parse(currentSequence) == maxSequence)
+                {
+                    Debug.Log("Already at the first content, cannot go back.");
+                    return; 
+
+                    // もしTopに遷移なら下記の処理
+                    // index = contentList.FindIndex(c => c.Top); // Topコンテンツを表示
+                    // //currentCategoryをデフォルトに
+                    // currentCategory ="00";
+                }
+                else
+                {
+                    // それ以外なら次のSequenceに移動
+                    index = currentIndex + 1;
+                    //currentCategoryを変更する
+                    currentCategory = contentList[index].Category;
+                }
                 break;
         }
 
@@ -216,7 +278,7 @@ public class ContentManager : MonoBehaviour
 
         if (content.Top)
         {
-            string videoPath = "file://" + Path.Combine(desktopPath, "Sample", "000.mp4");
+            string videoPath = "file://" + Path.Combine(desktopPath, "wwo", "000.mp4");
             videoPlayer.url = videoPath;
             videoPlayer.targetTexture = renderTexture;
             rawImage.texture = renderTexture;
@@ -224,7 +286,7 @@ public class ContentManager : MonoBehaviour
         }
         else
         {
-            string imagePath = "file://" + Path.Combine(desktopPath, "Sample", content.Category + "-"+ content.Sequence + ".png");
+            string imagePath = "file://" + Path.Combine(desktopPath, "wwo", content.Category + "-"+ content.Sequence + ".png");
             byte[] imageBytes = File.ReadAllBytes(imagePath.Substring(7)); // "file://"を除外
             imageTexture.LoadImage(imageBytes);
             rawImage.texture = imageTexture;
@@ -236,9 +298,11 @@ public class ContentManager : MonoBehaviour
     /// </summary>
     private IEnumerator FadeTransition(Action onComplete)
     {
+        isFading = true;
         yield return StartCoroutine(Fade(fadeDuration, 0));
         onComplete();
         yield return StartCoroutine(Fade(0, fadeDuration));
+        isFading = false;
     }
 
     /// <summary>

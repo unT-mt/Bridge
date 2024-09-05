@@ -343,7 +343,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   renderTexture: {fileID: 8400000, guid: cfed2091b795d92499545f42801bab21, type: 2}
   fadeDuration: 1
-  timeoutDuration: 6
+  timeoutDuration: 60
 --- !u!1 &487625249
 GameObject:
   m_ObjectHideFlags: 0
