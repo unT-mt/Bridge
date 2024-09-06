@@ -104,22 +104,15 @@ public class ContentManager : MonoBehaviour
             else if (Input.GetKeyDown(KeyCode.G))
             {
                 PlaySound();
-                SwitchContent("J2", "first");
-                currentCategory = "J2";
+                SwitchContent("E1", "first");
+                currentCategory = "E1";
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.H))
             {
                 PlaySound();
-                SwitchContent("J3", "first");
-                currentCategory = "J3";
-                videoPlayer.Stop();
-            }
-            else if (Input.GetKeyDown(KeyCode.I))
-            {
-                PlaySound();
-                SwitchContent("E1", "first");
-                currentCategory = "E1";
+                SwitchContent("J2", "first");
+                currentCategory = "J2";
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.J))
@@ -130,6 +123,13 @@ public class ContentManager : MonoBehaviour
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.K))
+            {
+                PlaySound();
+                SwitchContent("J3", "first");
+                currentCategory = "J3";
+                videoPlayer.Stop();
+            }
+            else if (Input.GetKeyDown(KeyCode.L))
             {
                 PlaySound();
                 SwitchContent("E3", "first");
@@ -150,7 +150,7 @@ public class ContentManager : MonoBehaviour
 
         //システムからパスを取得
         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        string[] files = Directory.GetFiles(Path.Combine(desktopPath, "wwo"));
+        string[] files = Directory.GetFiles(Path.Combine(desktopPath, "wwo/Assets"));
 
         foreach (var file in files)
         {
@@ -278,7 +278,7 @@ public class ContentManager : MonoBehaviour
 
         if (content.Top)
         {
-            string videoPath = "file://" + Path.Combine(desktopPath, "wwo", "000.mp4");
+            string videoPath = "file://" + Path.Combine(desktopPath, "wwo/Assets", "000.mp4");
             videoPlayer.url = videoPath;
             videoPlayer.targetTexture = renderTexture;
             rawImage.texture = renderTexture;
@@ -286,7 +286,7 @@ public class ContentManager : MonoBehaviour
         }
         else
         {
-            string imagePath = "file://" + Path.Combine(desktopPath, "wwo", content.Category + "-"+ content.Sequence + ".png");
+            string imagePath = "file://" + Path.Combine(desktopPath, "wwo/Assets", content.Category + "-"+ content.Sequence + ".png");
             byte[] imageBytes = File.ReadAllBytes(imagePath.Substring(7)); // "file://"を除外
             imageTexture.LoadImage(imageBytes);
             rawImage.texture = imageTexture;
