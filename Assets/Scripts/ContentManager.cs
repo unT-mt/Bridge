@@ -97,43 +97,43 @@ public class ContentManager : MonoBehaviour
             else if (Input.GetKeyDown(KeyCode.F))
             {
                 PlaySound();
-                SwitchContent("J1", "first");
                 currentCategory = "J1";
+                SwitchContent(currentCategory, "first");
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.G))
             {
                 PlaySound();
-                SwitchContent("E1", "first");
                 currentCategory = "E1";
+                SwitchContent(currentCategory, "first");
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.H))
             {
                 PlaySound();
-                SwitchContent("J2", "first");
                 currentCategory = "J2";
+                SwitchContent(currentCategory, "first");
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.J))
             {
                 PlaySound();
-                SwitchContent("E2", "first");
                 currentCategory = "E2";
+                SwitchContent(currentCategory, "first");
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.K))
             {
                 PlaySound();
-                SwitchContent("J3", "first");
                 currentCategory = "J3";
+                SwitchContent(currentCategory, "first");
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.L))
             {
                 PlaySound();
-                SwitchContent("E3", "first");
                 currentCategory = "E3";
+                SwitchContent(currentCategory, "first");
                 videoPlayer.Stop();
             }
         }
