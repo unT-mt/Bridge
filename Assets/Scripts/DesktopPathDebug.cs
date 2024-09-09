@@ -9,12 +9,5 @@ public class DesktopPathDebug : MonoBehaviour
     void Start()
     {
         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        Debug.Log("Desktop Path: " + desktopPath);
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 }

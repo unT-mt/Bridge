@@ -74,7 +74,7 @@ public class ContentManager : MonoBehaviour
         //     Debug.Log(content.Sequence);
         // }
 
-        JsonChange();
+        ButtonStateToJsonFile();
     }
 
     void Update()
@@ -263,7 +263,7 @@ public class ContentManager : MonoBehaviour
             {
                 PlayContent(index);
                 AfterPlayContent(currentCategory);
-                JsonChange();
+                ButtonStateToJsonFile();
             }));
         }
     }
@@ -281,7 +281,7 @@ public class ContentManager : MonoBehaviour
                 PlayContent(index);
                 currentSequenceState = "none";
                 Debug.Log(currentSequenceState);
-                JsonChange();
+                ButtonStateToJsonFile();
             }));
         }
         currentSequence ="00";
@@ -315,6 +315,7 @@ public class ContentManager : MonoBehaviour
             rawImage.texture = imageTexture;
         }
     }
+
     private void AfterPlayContent(string category)
     {
         // PlayContentが終了した後の処理
@@ -400,7 +401,7 @@ public class ContentManager : MonoBehaviour
     }
 
     // コンテンツが変更された際に呼び出される
-    private void JsonChange()
+    private void ButtonStateToJsonFile()
     {
         OnContentChanged?.Invoke();  // デリゲートの呼び出し
     }

@@ -50,8 +50,8 @@ public class ButtonStateManager : MonoBehaviour
         else if(contentManager.currentSequenceState == "last")
         {
             buttonStates["b"] = true;
-            buttonStates["m"] = true;
-            buttonStates["n"] = false;
+            buttonStates["m"] = false;
+            buttonStates["n"] = true;
         }
         else if(contentManager.currentSequenceState == "mid")
         {
@@ -79,7 +79,7 @@ public class ButtonStateManager : MonoBehaviour
         if(contentManager.currentCategory == "E2") buttonStates["j"] = false;
         if(contentManager.currentCategory == "J3") buttonStates["k"] = false;
         if(contentManager.currentCategory == "E3") buttonStates["l"] = false;
-        
+
         SaveButtonStatesToJson();
     }
 
@@ -92,6 +92,6 @@ public class ButtonStateManager : MonoBehaviour
         // Write the JSON content to the file
         File.WriteAllText(jsonFilePath, jsonContent);
 
-        Debug.Log("Button states saved to: " + jsonFilePath);
+        //Debug.Log("Button states saved to: " + jsonFilePath);
     }
 }
