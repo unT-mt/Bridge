@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 
 public class ButtonStateManager : MonoBehaviour
 {
+    public ContentManager contentManager;
     // Dictionary to store the button states
     private Dictionary<string, bool> buttonStates = new Dictionary<string, bool>()
     {
@@ -31,6 +32,8 @@ public class ButtonStateManager : MonoBehaviour
         // Ensure directory exists
         Directory.CreateDirectory(Path.GetDirectoryName(jsonFilePath));
 
+        contentManager.OnContentChanged += UpdateButtonStates;
+        
         // Initialize the button states (if necessary)
         UpdateButtonStates();
     }
@@ -38,18 +41,45 @@ public class ButtonStateManager : MonoBehaviour
     // Update button states based on the ContentManager or other logic
     public void UpdateButtonStates()
     {
-        // Example: Enable only F, G, and J buttons
+        if(contentManager.currentSequenceState == "first")
+        {
+            buttonStates["b"] = false;
+            buttonStates["m"] = true;
+            buttonStates["n"] = true;
+        }
+        else if(contentManager.currentSequenceState == "last")
+        {
+            buttonStates["b"] = true;
+            buttonStates["m"] = true;
+            buttonStates["n"] = false;
+        }
+        else if(contentManager.currentSequenceState == "mid")
+        {
+            buttonStates["b"] = true;
+            buttonStates["m"] = true;
+            buttonStates["n"] = true;
+        }
+        else if(contentManager.currentSequenceState == "none")
+        {
+            buttonStates["b"] = false;
+            buttonStates["m"] = false;
+            buttonStates["n"] = false;
+        }
+
         buttonStates["f"] = true;
         buttonStates["g"] = true;
-        buttonStates["h"] = false;
+        buttonStates["h"] = true;
         buttonStates["j"] = true;
-        buttonStates["k"] = false;
-        buttonStates["l"] = false;
-        buttonStates["b"] = false;
-        buttonStates["m"] = false;
-        buttonStates["n"] = false;
+        buttonStates["k"] = true;
+        buttonStates["l"] = true;
 
-        // Save the updated states to a JSON file
+        if(contentManager.currentCategory == "J1") buttonStates["f"] = false;
+        if(contentManager.currentCategory == "E1") buttonStates["g"] = false;
+        if(contentManager.currentCategory == "J2") buttonStates["h"] = false;
+        if(contentManager.currentCategory == "E2") buttonStates["j"] = false;
+        if(contentManager.currentCategory == "J3") buttonStates["k"] = false;
+        if(contentManager.currentCategory == "E3") buttonStates["l"] = false;
+        
         SaveButtonStatesToJson();
     }
 

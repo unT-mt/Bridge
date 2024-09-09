@@ -22,6 +22,9 @@ public class ContentAttributes
 
 public class ContentManager : MonoBehaviour
 {
+    // Jsonファイル上書きのためのデリゲートの定義
+    public Action OnContentChanged;
+
     //動画と画像を表示するレンダーテクスチャを指定
     public RenderTexture renderTexture;
 
@@ -37,9 +40,9 @@ public class ContentManager : MonoBehaviour
     //ファイルをリストで管理し、同時に現在のインデックスを保持する
     private List<ContentAttributes> contentList;
     private int currentIndex = 0;
-    public string currentCategory; 
-    public string currentSequence; 
-    public string currentSequenceState; 
+    public string currentCategory = "00"; 
+    public string currentSequence = "00"; 
+    public string currentSequenceState ="none"; 
 
     //タイムアウトの処理のための変数
     public float timeoutDuration = 60f;
@@ -70,6 +73,8 @@ public class ContentManager : MonoBehaviour
         //     Debug.Log(content.Category);
         //     Debug.Log(content.Sequence);
         // }
+
+        JsonChange();
     }
 
     void Update()
@@ -105,48 +110,66 @@ public class ContentManager : MonoBehaviour
             else if (Input.GetKeyDown(KeyCode.F))
             {
                 PlaySound();
-                currentCategory = "J1";
-                SwitchContent(currentCategory, "first");
+                if(currentCategory !="J1")
+                {
+                    currentCategory = "J1";
+                    SwitchContent(currentCategory, "first");
+                }
                 currentSequenceState = "first";
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.G))
             {
                 PlaySound();
-                currentCategory = "E1";
-                SwitchContent(currentCategory, "first");
+                if(currentCategory !="E1")
+                {
+                    currentCategory = "E1";
+                    SwitchContent(currentCategory, "first");
+                }
                 currentSequenceState = "first";
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.H))
             {
                 PlaySound();
-                currentCategory = "J2";
-                SwitchContent(currentCategory, "first");
+                if(currentCategory !="J2")
+                {
+                    currentCategory = "J2";
+                    SwitchContent(currentCategory, "first");
+                }
                 currentSequenceState = "first";
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.J))
             {
                 PlaySound();
-                currentCategory = "E2";
-                SwitchContent(currentCategory, "first");
+                if(currentCategory !="E2")
+                {
+                    currentCategory = "E2";
+                    SwitchContent(currentCategory, "first");
+                }
                 currentSequenceState = "first";
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.K))
             {
                 PlaySound();
-                currentCategory = "J3";
-                SwitchContent(currentCategory, "first");
+                if(currentCategory !="J3")
+                {
+                    currentCategory = "J3";
+                    SwitchContent(currentCategory, "first");
+                }
                 currentSequenceState = "first";
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.L))
             {
                 PlaySound();
-                currentCategory = "E3";
-                SwitchContent(currentCategory, "first");
+                if(currentCategory !="E3")
+                {
+                    currentCategory = "E3";
+                    SwitchContent(currentCategory, "first");
+                }
                 currentSequenceState = "first";
                 videoPlayer.Stop();
             }
@@ -267,6 +290,7 @@ public class ContentManager : MonoBehaviour
             {
                 PlayContent(index);
                 AfterPlayContent(currentCategory);
+                JsonChange();
             }));
         }
     }
@@ -284,6 +308,7 @@ public class ContentManager : MonoBehaviour
                 PlayContent(index);
                 currentSequenceState = "none";
                 Debug.Log(currentSequenceState);
+                JsonChange();
             }));
         }
         currentSequence ="00";
@@ -399,5 +424,11 @@ public class ContentManager : MonoBehaviour
     {
         // 効果音を再生
         audioSource.Play();
+    }
+
+    // コンテンツが変更された際に呼び出される
+    private void JsonChange()
+    {
+        OnContentChanged?.Invoke();  // デリゲートの呼び出し
     }
 }
