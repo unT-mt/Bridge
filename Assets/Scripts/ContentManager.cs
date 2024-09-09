@@ -37,7 +37,9 @@ public class ContentManager : MonoBehaviour
     //ファイルをリストで管理し、同時に現在のインデックスを保持する
     private List<ContentAttributes> contentList;
     private int currentIndex = 0;
-    private string currentCategory = "00"; 
+    public string currentCategory; 
+    public string currentSequence; 
+    public string currentSequenceState; 
 
     //タイムアウトの処理のための変数
     public float timeoutDuration = 60f;
@@ -62,6 +64,12 @@ public class ContentManager : MonoBehaviour
 
          //初回起動時
         InitializeDisplay();
+
+        // foreach(var content in contentList)
+        // {
+        //     Debug.Log(content.Category);
+        //     Debug.Log(content.Sequence);
+        // }
     }
 
     void Update()
@@ -99,6 +107,7 @@ public class ContentManager : MonoBehaviour
                 PlaySound();
                 currentCategory = "J1";
                 SwitchContent(currentCategory, "first");
+                currentSequenceState = "first";
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.G))
@@ -106,6 +115,7 @@ public class ContentManager : MonoBehaviour
                 PlaySound();
                 currentCategory = "E1";
                 SwitchContent(currentCategory, "first");
+                currentSequenceState = "first";
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.H))
@@ -113,6 +123,7 @@ public class ContentManager : MonoBehaviour
                 PlaySound();
                 currentCategory = "J2";
                 SwitchContent(currentCategory, "first");
+                currentSequenceState = "first";
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.J))
@@ -120,6 +131,7 @@ public class ContentManager : MonoBehaviour
                 PlaySound();
                 currentCategory = "E2";
                 SwitchContent(currentCategory, "first");
+                currentSequenceState = "first";
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.K))
@@ -127,6 +139,7 @@ public class ContentManager : MonoBehaviour
                 PlaySound();
                 currentCategory = "J3";
                 SwitchContent(currentCategory, "first");
+                currentSequenceState = "first";
                 videoPlayer.Stop();
             }
             else if (Input.GetKeyDown(KeyCode.L))
@@ -134,6 +147,7 @@ public class ContentManager : MonoBehaviour
                 PlaySound();
                 currentCategory = "E3";
                 SwitchContent(currentCategory, "first");
+                currentSequenceState = "first";
                 videoPlayer.Stop();
             }
         }
@@ -185,7 +199,16 @@ public class ContentManager : MonoBehaviour
     {
         int index = -1;
         
-        string currentSequence = contentList[currentIndex].Sequence;
+        currentSequence = contentList[currentIndex].Sequence;
+
+        int maxSequence = contentList
+            .Where(c => c.Category == category)
+            .Max(c => 
+            {
+                int sequenceValue = int.Parse(c.Sequence);
+                Debug.Log("Parsed Sequence: " + sequenceValue);
+                return sequenceValue;
+            });
         
         switch (sequenceType)
         {
@@ -216,15 +239,6 @@ public class ContentManager : MonoBehaviour
                     Debug.Log("Category: " + content.Category + ", Sequence: " + content.Sequence);
                 }
 
-                int maxSequence = contentList
-                    .Where(c => c.Category == category)
-                    .Max(c => 
-                    {
-                        int sequenceValue = int.Parse(c.Sequence);
-                        Debug.Log("Parsed Sequence: " + sequenceValue);
-                        return sequenceValue;
-                    });
-
                 // 現在のSequenceがカテゴリ内で最大値なら遷移させない
                 if (int.Parse(currentSequence) == maxSequence)
                 {
@@ -249,7 +263,11 @@ public class ContentManager : MonoBehaviour
         if (index != -1 && index != currentIndex)
         {
             Debug.Log(index);
-            StartCoroutine(FadeTransition(() => PlayContent(index)));
+            StartCoroutine(FadeTransition(() =>
+            {
+                PlayContent(index);
+                AfterPlayContent(currentCategory);
+            }));
         }
     }
 
@@ -261,8 +279,15 @@ public class ContentManager : MonoBehaviour
         int index = contentList.FindIndex(c => c.Top);
         if (index != -1 && index != currentIndex)
         {
-            StartCoroutine(FadeTransition(() => PlayContent(index)));
+            StartCoroutine(FadeTransition(() =>
+            {
+                PlayContent(index);
+                currentSequenceState = "none";
+                Debug.Log(currentSequenceState);
+            }));
         }
+        currentSequence ="00";
+        currentCategory ="00";
     }
 
     /// <summary>
@@ -291,6 +316,40 @@ public class ContentManager : MonoBehaviour
             imageTexture.LoadImage(imageBytes);
             rawImage.texture = imageTexture;
         }
+    }
+    private void AfterPlayContent(string category)
+    {
+        // PlayContentが終了した後の処理
+        currentSequence = contentList[currentIndex].Sequence;
+
+        int maxSequence = contentList
+            .Where(c => c.Category == category)
+            .Max(c => 
+            {
+                int sequenceValue = int.Parse(c.Sequence);
+                Debug.Log("Parsed Sequence: " + sequenceValue);
+                return sequenceValue;
+            });
+        
+        int intCurrentSequence = 
+            currentSequence == "."  // 意図しない文字列を取得したので応急処置。必ず修正する。
+                ? 0 
+                : Convert.ToInt32(currentSequence);
+
+        if(intCurrentSequence == maxSequence)
+        {
+            currentSequenceState = "last";
+        }
+        else if(intCurrentSequence == 1)
+        {
+            currentSequenceState = "first";
+        }
+        else
+        {
+            currentSequenceState = "mid";
+        };
+
+        Debug.Log(currentSequenceState);
     }
 
     /// <summary>
