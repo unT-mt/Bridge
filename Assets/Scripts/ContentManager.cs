@@ -79,101 +79,74 @@ public class ContentManager : MonoBehaviour
 
     void Update()
     {
-        //タイマーを用意しタイムアウト時にTopへ遷移
+        // タイマーを用意しタイムアウト時にTopへ遷移
         displayTimer += Time.deltaTime;
 
-        if(!isFading)
+        if (!isFading)
         {
+            // タイムアウト処理
             if (displayTimer >= timeoutDuration && !contentList[currentIndex].Top)
             {
                 SwitchToTop();
             }
-            //物理ボタンに応じた処理
-            if (Input.GetKeyDown(KeyCode.M))
+
+            // キーとカテゴリの対応を辞書で管理
+            var keyToCategory = new Dictionary<KeyCode, string>
             {
-                PlaySound();
-                //現在表示しているコンテンツがTopでないなら、次のコンテンツを表示
-                if (currentIndex != 0) SwitchContent(currentCategory, "next");
-            }
-            else if (Input.GetKeyDown(KeyCode.B))
+                { KeyCode.F, "J1" },
+                { KeyCode.G, "E1" },
+                { KeyCode.H, "J2" },
+                { KeyCode.J, "E2" },
+                { KeyCode.K, "J3" },
+                { KeyCode.L, "E3" }
+            };
+
+            // M, B, Nキーの処理
+            HandleNavigationKeys();
+
+            // カテゴリに応じたキー入力の処理
+            foreach (var entry in keyToCategory)
             {
-                PlaySound();
-                //現在表示しているコンテンツがTopでないなら、前のコンテンツを表示
-                if (currentIndex != 0) SwitchContent(currentCategory, "previous");
-            }
-            else if (Input.GetKeyDown(KeyCode.N))
-            {
-                PlaySound();
-                //Topへ遷移
-                SwitchToTop();
-            }
-            else if (Input.GetKeyDown(KeyCode.F))
-            {
-                PlaySound();
-                if(currentCategory !="J1")
+                if (Input.GetKeyDown(entry.Key))
                 {
-                    currentCategory = "J1";
-                    SwitchContent(currentCategory, "first");
+                    PlaySound();
+                    SwitchCategory(entry.Value);
+                    break;  // 一つのキーに対応した処理が終わったらループを抜ける
                 }
-                currentSequenceState = "first";
-                videoPlayer.Stop();
-            }
-            else if (Input.GetKeyDown(KeyCode.G))
-            {
-                PlaySound();
-                if(currentCategory !="E1")
-                {
-                    currentCategory = "E1";
-                    SwitchContent(currentCategory, "first");
-                }
-                currentSequenceState = "first";
-                videoPlayer.Stop();
-            }
-            else if (Input.GetKeyDown(KeyCode.H))
-            {
-                PlaySound();
-                if(currentCategory !="J2")
-                {
-                    currentCategory = "J2";
-                    SwitchContent(currentCategory, "first");
-                }
-                currentSequenceState = "first";
-                videoPlayer.Stop();
-            }
-            else if (Input.GetKeyDown(KeyCode.J))
-            {
-                PlaySound();
-                if(currentCategory !="E2")
-                {
-                    currentCategory = "E2";
-                    SwitchContent(currentCategory, "first");
-                }
-                currentSequenceState = "first";
-                videoPlayer.Stop();
-            }
-            else if (Input.GetKeyDown(KeyCode.K))
-            {
-                PlaySound();
-                if(currentCategory !="J3")
-                {
-                    currentCategory = "J3";
-                    SwitchContent(currentCategory, "first");
-                }
-                currentSequenceState = "first";
-                videoPlayer.Stop();
-            }
-            else if (Input.GetKeyDown(KeyCode.L))
-            {
-                PlaySound();
-                if(currentCategory !="E3")
-                {
-                    currentCategory = "E3";
-                    SwitchContent(currentCategory, "first");
-                }
-                currentSequenceState = "first";
-                videoPlayer.Stop();
             }
         }
+    }
+
+    // M, B, Nキーのナビゲーション処理
+    void HandleNavigationKeys()
+    {
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+            PlaySound();
+            if (currentIndex != 0) SwitchContent(currentCategory, "next");
+        }
+        else if (Input.GetKeyDown(KeyCode.B))
+        {
+            PlaySound();
+            if (currentIndex != 0) SwitchContent(currentCategory, "previous");
+        }
+        else if (Input.GetKeyDown(KeyCode.N))
+        {
+            PlaySound();
+            SwitchToTop();
+        }
+    }
+
+    // カテゴリの切り替え処理
+    void SwitchCategory(string newCategory)
+    {
+        if (currentCategory != newCategory)
+        {
+            currentCategory = newCategory;
+            SwitchContent(currentCategory, "first");
+        }
+        currentSequenceState = "first";
+        videoPlayer.Stop();
     }
 
     /// <summary>
