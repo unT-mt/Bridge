@@ -346,7 +346,7 @@ MonoBehaviour:
   currentCategory: 
   currentSequence: 
   currentSequenceState: 
-  timeoutDuration: 6
+  timeoutDuration: 60
 --- !u!1 &580209513
 GameObject:
   m_ObjectHideFlags: 0
