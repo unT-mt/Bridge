@@ -124,12 +124,12 @@ public class ContentManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.M))
         {
             PlaySound();
-            if (currentIndex != 14) SwitchContent(currentCategory, "next");
+            if (currentIndex != 0) SwitchContent(currentCategory, "next");
         }
         else if (Input.GetKeyDown(KeyCode.B))
         {
             PlaySound();
-            if (currentIndex != 14) SwitchContent(currentCategory, "previous");
+            if (currentIndex != 0) SwitchContent(currentCategory, "previous");
         }
         else if (Input.GetKeyDown(KeyCode.N))
         {
@@ -190,6 +190,11 @@ public class ContentManager : MonoBehaviour
 
             contentList.Add(attr);
         }
+
+        contentList = contentList
+            .OrderBy(c => c.Top ? "0" : c.Category)  // Ensure that Top (t_s.mp4) comes first
+            .ThenBy(c => c.Sequence)
+            .ToList();
     }
 
 
@@ -317,7 +322,7 @@ public class ContentManager : MonoBehaviour
             .Where(c => c.Category == category)
             .Max(c => int.Parse(c.Sequence));
 
-        int intCurrentSequence = currentSequence == "." ? 0 : Convert.ToInt32(currentSequence);
+        int intCurrentSequence = Convert.ToInt32(currentSequence);
 
         if (intCurrentSequence == maxSequence)
         {
