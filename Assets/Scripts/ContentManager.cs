@@ -42,7 +42,7 @@ public class ContentManager : MonoBehaviour
     private int currentIndex = 0;
     public string currentCategory = "00"; 
     public string currentSequence = "00"; 
-    public string currentSequenceState ="none"; 
+    public string currentSequenceState = "none"; 
 
     //タイムアウトの処理のための変数
     public float timeoutDuration = 60f;
@@ -68,13 +68,14 @@ public class ContentManager : MonoBehaviour
          //初回起動時
         InitializeDisplay();
 
-        // foreach(var content in contentList)
-        // {
-        //     Debug.Log(content.Category);
-        //     Debug.Log(content.Sequence);
-        // }
+        // Jsonファイルの出力
+        ConvertButtonStateToJsonFile();
 
-        ButtonStateToJsonFile();
+        foreach(var content in contentList)
+        {
+            Debug.Log(content.Category);
+            Debug.Log(content.Sequence);
+        }
     }
 
     void Update()
@@ -93,12 +94,12 @@ public class ContentManager : MonoBehaviour
             // キーとカテゴリの対応を辞書で管理
             var keyToCategory = new Dictionary<KeyCode, string>
             {
-                { KeyCode.F, "J1" },
-                { KeyCode.G, "E1" },
-                { KeyCode.H, "J2" },
-                { KeyCode.J, "E2" },
-                { KeyCode.K, "J3" },
-                { KeyCode.L, "E3" }
+                { KeyCode.F, "t_p_jp" },
+                { KeyCode.G, "t_p_en" },
+                { KeyCode.H, "t_r_jp" },
+                { KeyCode.J, "t_r_en" },
+                { KeyCode.K, "t_u_jp" },
+                { KeyCode.L, "t_u_en" }
             };
 
             // M, B, Nキーの処理
@@ -111,7 +112,7 @@ public class ContentManager : MonoBehaviour
                 {
                     PlaySound();
                     SwitchCategory(entry.Value);
-                    break;  // 一つのキーに対応した処理が終わったらループを抜ける
+                    break;
                 }
             }
         }
@@ -123,12 +124,12 @@ public class ContentManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.M))
         {
             PlaySound();
-            if (currentIndex != 0) SwitchContent(currentCategory, "next");
+            if (currentIndex != 14) SwitchContent(currentCategory, "next");
         }
         else if (Input.GetKeyDown(KeyCode.B))
         {
             PlaySound();
-            if (currentIndex != 0) SwitchContent(currentCategory, "previous");
+            if (currentIndex != 14) SwitchContent(currentCategory, "previous");
         }
         else if (Input.GetKeyDown(KeyCode.N))
         {
@@ -164,19 +165,34 @@ public class ContentManager : MonoBehaviour
 
         foreach (var file in files)
         {
-            var attr = new ContentAttributes
+            var fileName = Path.GetFileName(file);
+            var attr = new ContentAttributes();
+
+            // 動画ファイルか画像ファイルかを判定
+            if (fileName == "t_s.mp4")
             {
-                Top = Path.GetFileName(file) == "000.mp4",
-                Category = Path.GetFileName(file).Substring(0, 2),
-                Sequence = Path.GetFileName(file).Substring(3, 1)
-            };
+                // 動画ファイルの場合の処理
+                attr.Top = true;
+                attr.Category = "00";
+                attr.Sequence = "00";
+            }
+            else if (fileName.Length >= 11) // 画像ファイルの場合の処理（最低限の長さを持つファイル名）
+            {
+                attr.Top = false;
+                attr.Category = fileName.Substring(0, 6); // t_p_en, t_p_jp, etc.
+                attr.Sequence = fileName.Substring(7, 2); // 01, 02, etc.
+            }
+            else
+            {
+                Debug.LogWarning("Unexpected file name format: " + fileName);
+                continue; // ファイル名が予期しない形式の場合はスキップ
+            }
+
             contentList.Add(attr);
         }
     }
 
-    /// <summary>
-    /// 初期表示
-    /// </summary>
+
     private void InitializeDisplay()
     {
         currentIndex = contentList.FindIndex(c => c.Top);
@@ -188,8 +204,6 @@ public class ContentManager : MonoBehaviour
 
     /// <summary>
     /// 表示コンテンツを遷移させる
-    /// 未対応：各カテゴリの最初/最後のコンテンツからTopに遷移させる
-    /// （現状、例えばJ1の最後のコンテンツが表示されている場合次に遷移するとJ2の最初が表示される）
     /// </summary>
     private void SwitchContent(string category, string sequenceType)
     {
@@ -199,24 +213,21 @@ public class ContentManager : MonoBehaviour
 
         int maxSequence = contentList
             .Where(c => c.Category == category)
-            .Max(c => 
-            {
-                int sequenceValue = int.Parse(c.Sequence);
-                Debug.Log("Parsed Sequence: " + sequenceValue);
-                return sequenceValue;
-            });
-        
+            .Select(c => int.Parse(c.Sequence))
+            .DefaultIfEmpty(0)  // 空の場合のデフォルト値を 0 に設定
+            .Max();
+
         switch (sequenceType)
         {
             //最初のコンテンツに遷移
             case "first":
-                index = contentList.FindIndex(c => c.Category == category && c.Sequence == "1");
+                index = contentList.FindIndex(c => c.Category == category && c.Sequence == "01");
                 break;
 
             // 前のコンテンツに遷移
             case "previous":
                 // 現在がシーケンス1なら何もしない（先頭なので戻れない）
-                if (currentSequence == "1")
+                if (currentSequence == "01")
                 {
                     Debug.Log("Already at the first content, cannot go back.");
                     return; 
@@ -227,43 +238,23 @@ public class ContentManager : MonoBehaviour
 
             // 次のコンテンツに遷移する場合
             case "next":
-                // 現在のカテゴリ内で最大のSequenceを取得
-                Debug.Log("Current category: " + category);
-
-                foreach (var content in contentList.Where(c => c.Category == category))
+                if (int.Parse(currentSequence) == maxSequence) 
                 {
-                    Debug.Log("Category: " + content.Category + ", Sequence: " + content.Sequence);
-                }
-
-                // 現在のSequenceがカテゴリ内で最大値なら遷移させない
-                if (int.Parse(currentSequence) == maxSequence)
-                {
-                    Debug.Log("Already at the first content, cannot go back.");
+                    Debug.Log("Already at the last content, cannot go next.");
                     return; 
-
-                    // もしTopに遷移なら下記の処理
-                    // index = contentList.FindIndex(c => c.Top); // Topコンテンツを表示
-                    // //currentCategoryをデフォルトに
-                    // currentCategory ="00";
                 }
-                else
-                {
-                    // それ以外なら次のSequenceに移動
-                    index = currentIndex + 1;
-                    //currentCategoryを変更する
-                    currentCategory = contentList[index].Category;
-                }
+                index = currentIndex + 1;
+                currentCategory = contentList[index].Category;
                 break;
         }
 
         if (index != -1 && index != currentIndex)
         {
-            Debug.Log(index);
             StartCoroutine(FadeTransition(() =>
             {
                 PlayContent(index);
                 AfterPlayContent(currentCategory);
-                ButtonStateToJsonFile();
+                ConvertButtonStateToJsonFile();
             }));
         }
     }
@@ -280,12 +271,11 @@ public class ContentManager : MonoBehaviour
             {
                 PlayContent(index);
                 currentSequenceState = "none";
-                Debug.Log(currentSequenceState);
-                ButtonStateToJsonFile();
+                ConvertButtonStateToJsonFile();
             }));
         }
-        currentSequence ="00";
-        currentCategory ="00";
+        currentSequence = "00";
+        currentCategory = "00";
     }
 
     /// <summary>
@@ -301,7 +291,7 @@ public class ContentManager : MonoBehaviour
 
         if (content.Top)
         {
-            string videoPath = "file://" + Path.Combine(desktopPath, "wwo/Assets", "000.mp4");
+            string videoPath = "file://" + Path.Combine(desktopPath, "wwo/Assets", "t_s.mp4");
             videoPlayer.url = videoPath;
             videoPlayer.targetTexture = renderTexture;
             rawImage.texture = renderTexture;
@@ -309,44 +299,38 @@ public class ContentManager : MonoBehaviour
         }
         else
         {
-            string imagePath = "file://" + Path.Combine(desktopPath, "wwo/Assets", content.Category + "-"+ content.Sequence + ".png");
-            byte[] imageBytes = File.ReadAllBytes(imagePath.Substring(7)); // "file://"を除外
+            string imagePath = "file://" + Path.Combine(desktopPath, "wwo/Assets", content.Category + "_" + content.Sequence + ".png");
+            byte[] imageBytes = File.ReadAllBytes(imagePath.Substring(7));
             imageTexture.LoadImage(imageBytes);
             rawImage.texture = imageTexture;
         }
     }
 
+    /// <summary>
+    /// PlayContentが終了した後の処理
+    /// </summary>
     private void AfterPlayContent(string category)
     {
-        // PlayContentが終了した後の処理
         currentSequence = contentList[currentIndex].Sequence;
 
         int maxSequence = contentList
             .Where(c => c.Category == category)
-            .Max(c => 
-            {
-                int sequenceValue = int.Parse(c.Sequence);
-                Debug.Log("Parsed Sequence: " + sequenceValue);
-                return sequenceValue;
-            });
-        
-        int intCurrentSequence = 
-            currentSequence == "."  // 意図しない文字列を取得したので応急処置。必ず修正する。
-                ? 0 
-                : Convert.ToInt32(currentSequence);
+            .Max(c => int.Parse(c.Sequence));
 
-        if(intCurrentSequence == maxSequence)
+        int intCurrentSequence = currentSequence == "." ? 0 : Convert.ToInt32(currentSequence);
+
+        if (intCurrentSequence == maxSequence)
         {
             currentSequenceState = "last";
         }
-        else if(intCurrentSequence == 1)
+        else if (intCurrentSequence == 1)
         {
             currentSequenceState = "first";
         }
         else
         {
             currentSequenceState = "mid";
-        };
+        }
 
         Debug.Log(currentSequenceState);
     }
@@ -401,7 +385,7 @@ public class ContentManager : MonoBehaviour
     }
 
     // コンテンツが変更された際に呼び出される
-    private void ButtonStateToJsonFile()
+    private void ConvertButtonStateToJsonFile()
     {
         OnContentChanged?.Invoke();  // デリゲートの呼び出し
     }
