@@ -195,7 +195,7 @@ public class ContentManager : MonoBehaviour
         }
 
         contentList = contentList
-            .OrderBy(c => c.Top ? "0" : c.Category)  // Ensure that Top (t_s.mp4) comes first
+            .OrderBy(c => c.Top ? "0" : c.Category)  // Top (t_s.mp4) が先頭に来るようにする
             .ThenBy(c => c.Sequence)
             .ToList();
     }
@@ -402,27 +402,22 @@ public class ContentManager : MonoBehaviour
     {
         try
         {
-            // Define the path to the config file
             string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             string configFilePath = Path.Combine(desktopPath, "wwo_table", "config.txt");
 
             if (File.Exists(configFilePath))
             {
-                // Read all lines from the config file
                 string[] lines = File.ReadAllLines(configFilePath);
 
-                // Parse each line to extract fadeDuration and timeoutDuration
                 foreach (var line in lines)
                 {
                     if (line.StartsWith("fadeDuration"))
                     {
-                        // Parse fadeDuration from config file
                         string fadeValue = line.Split('=')[1].Trim().Replace("f", "");
                         fadeDuration = float.Parse(fadeValue);
                     }
                     else if (line.StartsWith("timeoutDuration"))
                     {
-                        // Parse timeoutDuration from config file
                         string timeoutValue = line.Split('=')[1].Trim().Replace("f", "");
                         timeoutDuration = float.Parse(timeoutValue);
                     }
