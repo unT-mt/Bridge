@@ -73,12 +73,12 @@ public class ButtonStateManager : MonoBehaviour
         buttonStates["k"] = true;
         buttonStates["l"] = true;
 
-        if(contentManager.currentCategory == "J1") buttonStates["f"] = false;
-        if(contentManager.currentCategory == "E1") buttonStates["g"] = false;
-        if(contentManager.currentCategory == "J2") buttonStates["h"] = false;
-        if(contentManager.currentCategory == "E2") buttonStates["j"] = false;
-        if(contentManager.currentCategory == "J3") buttonStates["k"] = false;
-        if(contentManager.currentCategory == "E3") buttonStates["l"] = false;
+        if(contentManager.currentCategory == "t_p_jp") buttonStates["f"] = false;
+        if(contentManager.currentCategory == "t_p_en") buttonStates["g"] = false;
+        if(contentManager.currentCategory == "t_r_jp") buttonStates["h"] = false;
+        if(contentManager.currentCategory == "t_r_en") buttonStates["j"] = false;
+        if(contentManager.currentCategory == "t_u_jp") buttonStates["k"] = false;
+        if(contentManager.currentCategory == "t_u_en") buttonStates["l"] = false;
 
         SaveButtonStatesToJson();
     }
