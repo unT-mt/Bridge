@@ -27,7 +27,7 @@ public class ButtonStateManager : MonoBehaviour
     {
         // Set the file path to desktop
         string desktopPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop);
-        jsonFilePath = Path.Combine(desktopPath, "wwo", "stats.json");
+        jsonFilePath = Path.Combine(desktopPath, "wwo_table", "stats.json");
 
         // Ensure directory exists
         Directory.CreateDirectory(Path.GetDirectoryName(jsonFilePath));

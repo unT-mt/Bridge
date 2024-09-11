@@ -164,7 +164,7 @@ public class ContentManager : MonoBehaviour
 
         //システムからパスを取得
         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        string[] files = Directory.GetFiles(Path.Combine(desktopPath, "wwo/Assets"));
+        string[] files = Directory.GetFiles(Path.Combine(desktopPath, "wwo_table/Assets"));
 
         foreach (var file in files)
         {
@@ -299,7 +299,7 @@ public class ContentManager : MonoBehaviour
 
         if (content.Top)
         {
-            string videoPath = "file://" + Path.Combine(desktopPath, "wwo/Assets", "t_s.mp4");
+            string videoPath = "file://" + Path.Combine(desktopPath, "wwo_table/Assets", "t_s.mp4");
             videoPlayer.url = videoPath;
             videoPlayer.targetTexture = renderTexture;
             rawImage.texture = renderTexture;
@@ -307,7 +307,7 @@ public class ContentManager : MonoBehaviour
         }
         else
         {
-            string imagePath = "file://" + Path.Combine(desktopPath, "wwo/Assets", content.Category + "_" + content.Sequence + ".png");
+            string imagePath = "file://" + Path.Combine(desktopPath, "wwo_table/Assets", content.Category + "_" + content.Sequence + ".png");
             byte[] imageBytes = File.ReadAllBytes(imagePath.Substring(7));
             imageTexture.LoadImage(imageBytes);
             rawImage.texture = imageTexture;
@@ -404,7 +404,7 @@ public class ContentManager : MonoBehaviour
         {
             // Define the path to the config file
             string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            string configFilePath = Path.Combine(desktopPath, "wwo", "config.txt");
+            string configFilePath = Path.Combine(desktopPath, "wwo_table", "config.txt");
 
             if (File.Exists(configFilePath))
             {
