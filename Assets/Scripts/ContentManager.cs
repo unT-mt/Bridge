@@ -29,7 +29,7 @@ public class ContentManager : MonoBehaviour
     public RenderTexture renderTexture;
 
     //フェードの持続時間を指定
-    public float fadeDuration = 1.0f;
+    [ReadOnly]public float fadeDuration = 1.0f;
 
     //自オブジェクトにアタッチするUnityコンポーネント
     private VideoPlayer videoPlayer;
@@ -40,12 +40,12 @@ public class ContentManager : MonoBehaviour
     //ファイルをリストで管理し、同時に現在のインデックスを保持する
     private List<ContentAttributes> contentList;
     private int currentIndex = 0;
-    public string currentCategory = "00"; 
-    public string currentSequence = "00"; 
-    public string currentSequenceState = "none"; 
+    [ReadOnly]public string currentCategory = "00"; 
+    [ReadOnly]public string currentSequence = "00"; 
+    [ReadOnly]public string currentSequenceState = "none"; 
 
     //タイムアウトの処理のための変数
-    public float timeoutDuration = 60f;
+    [ReadOnly]public float timeoutDuration = 60f;
     private float displayTimer;
 
     //フェード処理のための変数
