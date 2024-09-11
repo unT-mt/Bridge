@@ -13,7 +13,7 @@ public class ContentAttributes
     //Top動画であればtrue、それ以外の画像はfalse
     public bool Top { get; set; }
 
-    //画像のうち、F, G, H, I, J, Kどのカテゴリに対応したコンテンツか
+    //画像のうち、F, G, H, J, K, Lどのカテゴリに対応したコンテンツか
     public string Category { get; set; }
 
     //画像のうち、各カテゴリの何番目の画像か
@@ -349,9 +349,9 @@ public class ContentManager : MonoBehaviour
     private IEnumerator FadeTransition(Action onComplete)
     {
         isFading = true;
-        yield return StartCoroutine(Fade(fadeDuration, 0));
+        yield return StartCoroutine(Fade(1, 0));
         onComplete();
-        yield return StartCoroutine(Fade(0, fadeDuration));
+        yield return StartCoroutine(Fade(0, 1));
         isFading = false;
     }
 
@@ -360,7 +360,7 @@ public class ContentManager : MonoBehaviour
     /// </summary>
     private IEnumerator Fade(float from, float to)
     {
-        float duration = 0.5f;
+        float duration = fadeDuration / 2;
         float counter = 0f;
 
         CanvasGroup canvasGroup = rawImage.gameObject.GetComponent<CanvasGroup>();
