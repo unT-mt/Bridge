@@ -135,8 +135,7 @@ GameObject:
   - component: {fileID: 350028149}
   - component: {fileID: 350028146}
   - component: {fileID: 350028145}
-  - component: {fileID: 350028151}
-  - component: {fileID: 350028152}
+  - component: {fileID: 350028153}
   m_Layer: 5
   m_Name: RawImage
   m_TagString: Untagged
@@ -330,25 +329,7 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 350028143}
   m_CullTransparentMesh: 1
---- !u!114 &350028151
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 350028143}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c6ed984d309336a46b31bb7e41016fee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  renderTexture: {fileID: 8400000, guid: cfed2091b795d92499545f42801bab21, type: 2}
-  fadeDuration: 1
-  currentCategory: 
-  currentSequence: 
-  currentSequenceState: 
-  timeoutDuration: 60
---- !u!114 &350028152
+--- !u!114 &350028153
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -357,7 +338,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 350028143}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 13be61eece204644fae3843f7d62f940, type: 3}
+  m_Script: {fileID: 11500000, guid: 5e7993c29976c3a4b8e97585b11b7187, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   renderTexture: {fileID: 8400000, guid: 50e1661e0d09ffa42ac1a8eb73995298, type: 2}
@@ -424,7 +405,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &611718295
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -432,12 +413,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 611718294}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8dd97478c7205e64ebf6e64e3dde43fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  contentManager: {fileID: 350028151}
+  contentManager: {fileID: 0}
 --- !u!4 &611718296
 Transform:
   m_ObjectHideFlags: 0

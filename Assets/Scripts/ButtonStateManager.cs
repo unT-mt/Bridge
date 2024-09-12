@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 public class ButtonStateManager : MonoBehaviour
 {
-    public ContentManager contentManager;
+    public TableContentManager contentManager;
     // Dictionary to store the button states
     private Dictionary<string, bool> buttonStates = new Dictionary<string, bool>()
     {
