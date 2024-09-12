@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
 using UnityEngine;
@@ -13,14 +14,10 @@ public class WallContentAttributes
     //Top動画であればtrue、それ以外の画像はfalse
     public bool Top { get; set; }
 
-    //画像のうち、F, G, H, J, K, Lどのカテゴリに対応したコンテンツか
+    //Top動画でないならF, G, H, J, K, Lどのカテゴリに対応したコンテンツか
     public string Category { get; set; }
-
-    //画像のうち、各カテゴリの何番目の画像か
-    public string Sequence { get; set; }
 }
 
-//クラス名はリファクタリング時にまとめて変更する。
 public class WallContentManager : MonoBehaviour
 {
     //動画と画像を表示するレンダーテクスチャを指定
@@ -97,7 +94,7 @@ public class WallContentManager : MonoBehaviour
                 { KeyCode.L, "w_u_en" }
             };
 
-            // M, B, Nキーの処理
+            // Nキーの処理
             HandleNavigationKeys();
 
             // カテゴリに応じたキー入力の処理
@@ -177,13 +174,15 @@ public class WallContentManager : MonoBehaviour
             .ToList();
     }
 
-
+    /// <summary>
+    /// 表示の初期化
+    /// </summary>
     private void InitializeDisplay()
     {
         currentIndex = contentList.FindIndex(c => c.Top);
         if (currentIndex != -1)
         {
-            PlayContent(currentIndex);
+            StartCoroutine(SwitchContentWithFadeOut(currentIndex));
         }
     }
 
@@ -198,11 +197,60 @@ public class WallContentManager : MonoBehaviour
 
         if (index != -1 && index != currentIndex)
         {
-            StartCoroutine(FadeTransition(() =>
             {
-                PlayContent(index);
-            }));
+                StartCoroutine(SwitchContentWithFadeOut(index));
+            }
         }
+    }
+    
+    private IEnumerator SwitchContentWithFadeOut(int index)
+    {
+        isFading = true;
+        Debug.Log("フェードアウトを開始します");
+        yield return StartCoroutine(Fade(1, 0));
+
+        Debug.Log("コンテンツをロードします");
+        LoadContent(index);
+    }
+
+    private async void LoadContent(int index)
+    {
+        currentIndex = index;
+        displayTimer = 0f;
+
+        var content = contentList[index];
+        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+        if (content.Top)
+        {
+            string videoPath = "file://" + Path.Combine(desktopPath, "wwo_wall/Assets", "w_s.mp4");
+            await StartVideoPlaybackAsync(videoPath);
+        }
+        else
+        {
+            string videoPath = "file://" + Path.Combine(desktopPath, "wwo_wall/Assets", content.Category + ".mp4");
+            await StartVideoPlaybackAsync(videoPath);
+        }
+        Debug.Log("コンテンツのロードが完了しました");
+
+        StartCoroutine(SwitchContentWithFadeIn(index));
+    }
+    
+    private IEnumerator SwitchContentWithFadeIn(int index)
+    {
+        videoPlayer.Pause();
+        
+        Debug.Log("フェードインを開始します");
+        yield return StartCoroutine(Fade(0, 1));
+
+        Debug.Log("コンテンツを再生します");
+        PlayContent(index);
+        isFading = false;
+    }
+
+    private void PlayContent(int index)
+    {
+        videoPlayer.Play();
     }
 
     /// <summary>
@@ -213,54 +261,41 @@ public class WallContentManager : MonoBehaviour
         int index = contentList.FindIndex(c => c.Top);
         if (index != -1 && index != currentIndex)
         {
-            StartCoroutine(FadeTransition(() =>
-            {
-                PlayContent(index);
-            }));
+            StartCoroutine(SwitchContentWithFadeOut(index));
         }
         currentCategory = "00";
     }
 
-    /// <summary>
-    /// フォルダにアクセスし対応するコンテンツをロードする
-    /// </summary>
-    private void PlayContent(int index)
+    // 非同期処理でビデオの準備を待つメソッド
+    private async Task StartVideoPlaybackAsync(string videoPath)
     {
-        currentIndex = index;
-        displayTimer = 0f;
+        videoPlayer.url = videoPath;
+        videoPlayer.targetTexture = renderTexture;
+        rawImage.texture = renderTexture;
 
-        var content = contentList[index];
-        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        // 動画の準備が完了するまで待機
+        videoPlayer.Prepare();
 
-        if (content.Top)
-        {
-            string videoPath = "file://" + Path.Combine(desktopPath, "wwo_wall/Assets", "W_s.mp4");
-            videoPlayer.url = videoPath;
-            videoPlayer.targetTexture = renderTexture;
-            rawImage.texture = renderTexture;
-            videoPlayer.Play();
-        }
-        else
-        {
-            string videoPath = "file://" + Path.Combine(desktopPath, "wwo_wall/Assets", content.Category + ".mp4");
-            videoPlayer.url = videoPath;
-            videoPlayer.targetTexture = renderTexture;
-            rawImage.texture = renderTexture;
-            videoPlayer.Play();
-        }
+        // PrepareCompletedイベントの完了を非同期に待つ
+        await WaitForVideoPrepared();
+
+        Debug.Log("コンテンツの準備が完了しました");
     }
 
-
-    /// <summary>
-    /// フェードイン/アウトを担う処理
-    /// </summary>
-    private IEnumerator FadeTransition(Action onComplete)
+    // 動画の準備が完了するまで待つタスク
+    private Task WaitForVideoPrepared()
     {
-        isFading = true;
-        yield return StartCoroutine(Fade(1, 0));
-        onComplete();
-        yield return StartCoroutine(Fade(0, 1));
-        isFading = false;
+        var tcs = new TaskCompletionSource<bool>();
+
+        void OnPrepared(VideoPlayer source)
+        {
+            videoPlayer.prepareCompleted -= OnPrepared;
+            tcs.SetResult(true);
+        }
+
+        videoPlayer.prepareCompleted += OnPrepared;
+
+        return tcs.Task;
     }
 
     /// <summary>
@@ -337,5 +372,4 @@ public class WallContentManager : MonoBehaviour
             Debug.LogError("Error loading config file: " + ex.Message);
         }
     }
-
 }

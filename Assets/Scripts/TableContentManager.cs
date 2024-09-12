@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
 using UnityEngine;
@@ -200,13 +201,15 @@ public class TableContentManager : MonoBehaviour
             .ToList();
     }
 
-
+    /// <summary>
+    /// 表示の初期化
+    /// </summary>
     private void InitializeDisplay()
     {
         currentIndex = contentList.FindIndex(c => c.Top);
         if (currentIndex != -1)
         {
-            PlayContent(currentIndex);
+            StartCoroutine(SwitchContentWithFadeOut(currentIndex));
         }
     }
 
@@ -258,38 +261,21 @@ public class TableContentManager : MonoBehaviour
 
         if (index != -1 && index != currentIndex)
         {
-            StartCoroutine(FadeTransition(() =>
-            {
-                PlayContent(index);
-                AfterPlayContent(currentCategory);
-                ConvertButtonStateToJsonFile();
-            }));
+            StartCoroutine(SwitchContentWithFadeOut(index));
         }
     }
 
-    /// <summary>
-    /// Top表示でない場合、Topに遷移
-    /// </summary>
-    private void SwitchToTop()
+    private IEnumerator SwitchContentWithFadeOut(int index)
     {
-        int index = contentList.FindIndex(c => c.Top);
-        if (index != -1 && index != currentIndex)
-        {
-            StartCoroutine(FadeTransition(() =>
-            {
-                PlayContent(index);
-                currentSequenceState = "none";
-                ConvertButtonStateToJsonFile();
-            }));
-        }
-        currentSequence = "00";
-        currentCategory = "00";
+        isFading = true;
+        Debug.Log("フェードアウトを開始します");
+        yield return StartCoroutine(Fade(1, 0));
+
+        Debug.Log("コンテンツをロードします");
+        LoadContent(index);
     }
 
-    /// <summary>
-    /// フォルダにアクセスし対応するコンテンツをロードする
-    /// </summary>
-    private void PlayContent(int index)
+    private async void LoadContent(int index)
     {
         currentIndex = index;
         displayTimer = 0f;
@@ -300,10 +286,7 @@ public class TableContentManager : MonoBehaviour
         if (content.Top)
         {
             string videoPath = "file://" + Path.Combine(desktopPath, "wwo_table/Assets", "t_s.mp4");
-            videoPlayer.url = videoPath;
-            videoPlayer.targetTexture = renderTexture;
-            rawImage.texture = renderTexture;
-            videoPlayer.Play();
+            await StartVideoPlaybackAsync(videoPath);
         }
         else
         {
@@ -312,12 +295,82 @@ public class TableContentManager : MonoBehaviour
             imageTexture.LoadImage(imageBytes);
             rawImage.texture = imageTexture;
         }
+        Debug.Log("コンテンツのロードが完了しました");
+
+        ChangeCurrentSequenceState(currentCategory);
+        ConvertButtonStateToJsonFile();
+
+        StartCoroutine(SwitchContentWithFadeIn(index));
+    }
+
+    
+    private IEnumerator SwitchContentWithFadeIn(int index)
+    {
+        videoPlayer.Pause();
+        
+        Debug.Log("フェードインを開始します");
+        yield return StartCoroutine(Fade(0, 1));
+
+        Debug.Log("コンテンツを再生します");
+        PlayContent(index);
+        isFading = false;
+    }
+
+    private void PlayContent(int index)
+    {
+        videoPlayer.Play();
+    }
+
+    // 非同期処理でビデオの準備を待つメソッド
+    private async Task StartVideoPlaybackAsync(string videoPath)
+    {
+        videoPlayer.url = videoPath;
+        videoPlayer.targetTexture = renderTexture;
+        rawImage.texture = renderTexture;
+
+        // 動画の準備が完了するまで待機
+        videoPlayer.Prepare();
+
+        // PrepareCompletedイベントの完了を非同期に待つ
+        await WaitForVideoPrepared();
+
+        Debug.Log("コンテンツの準備が完了しました");
+    }
+
+    // 動画の準備が完了するまで待つタスク
+    private Task WaitForVideoPrepared()
+    {
+        var tcs = new TaskCompletionSource<bool>();
+
+        void OnPrepared(VideoPlayer source)
+        {
+            videoPlayer.prepareCompleted -= OnPrepared;
+            tcs.SetResult(true);
+        }
+
+        videoPlayer.prepareCompleted += OnPrepared;
+
+        return tcs.Task;
     }
 
     /// <summary>
-    /// PlayContentが終了した後の処理
+    /// Top表示でない場合、Topに遷移
     /// </summary>
-    private void AfterPlayContent(string category)
+    private void SwitchToTop()
+    {
+        int index = contentList.FindIndex(c => c.Top);
+        if (index != -1 && index != currentIndex)
+        {
+            StartCoroutine(SwitchContentWithFadeOut(index));
+        }
+        currentSequence = "00";
+        currentCategory = "00";
+    }
+
+    /// <summary>
+    /// PlayContentが終了した後にJsonファイル生成用に現在のシーケンス情報を更新
+    /// </summary>
+    private void ChangeCurrentSequenceState(string category)
     {
         currentSequence = contentList[currentIndex].Sequence;
 
@@ -335,24 +388,16 @@ public class TableContentManager : MonoBehaviour
         {
             currentSequenceState = "first";
         }
-        else
+        else if(intCurrentSequence != 0)
         {
             currentSequenceState = "mid";
         }
+        else
+        {
+            currentSequenceState = "none";
+        }
 
         Debug.Log(currentSequenceState);
-    }
-
-    /// <summary>
-    /// フェードイン/アウトを担う処理
-    /// </summary>
-    private IEnumerator FadeTransition(Action onComplete)
-    {
-        isFading = true;
-        yield return StartCoroutine(Fade(1, 0));
-        onComplete();
-        yield return StartCoroutine(Fade(0, 1));
-        isFading = false;
     }
 
     /// <summary>
@@ -435,5 +480,4 @@ public class TableContentManager : MonoBehaviour
             Debug.LogError("Error loading config file: " + ex.Message);
         }
     }
-
 }
