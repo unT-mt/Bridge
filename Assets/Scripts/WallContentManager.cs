@@ -16,6 +16,9 @@ public class WallContentAttributes
 
     //Top動画でないならF, G, H, J, K, Lどのカテゴリに対応したコンテンツか
     public string Category { get; set; }
+
+    //画像のうち、各カテゴリの何番目の画像か
+    public string Sequence { get; set; }
 }
 
 public class WallContentManager : MonoBehaviour
@@ -36,6 +39,8 @@ public class WallContentManager : MonoBehaviour
     private List<WallContentAttributes> contentList;
     private int currentIndex = 0;
     [ReadOnly]public string currentCategory = "00"; 
+    [ReadOnly]public string currentSequence = "00"; 
+    [ReadOnly]public string currentSequenceState = "none"; 
 
     //タイムアウトの処理のための変数
     [ReadOnly]public float timeoutDuration = 60f;
@@ -67,6 +72,7 @@ public class WallContentManager : MonoBehaviour
         foreach(var content in contentList)
         {
             Debug.Log(content.Category);
+            Debug.Log(content.Sequence);
         }
     }
 
@@ -113,7 +119,17 @@ public class WallContentManager : MonoBehaviour
     // Nキーのナビゲーション処理
     void HandleNavigationKeys()
     {
-        if (Input.GetKeyDown(KeyCode.N))
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+            PlaySound();
+            if (currentIndex != 0) SwitchContent(currentCategory, "next");
+        }
+        else if (Input.GetKeyDown(KeyCode.B))
+        {
+            PlaySound();
+            if (currentIndex != 0) SwitchContent(currentCategory, "previous");
+        }
+        else if (Input.GetKeyDown(KeyCode.N))
         {
             PlaySound();
             SwitchToTop();
@@ -146,19 +162,86 @@ public class WallContentManager : MonoBehaviour
         foreach (var file in files)
         {
             var fileName = Path.GetFileName(file);
-            var attr = new WallContentAttributes();
+
 
             // 動画ファイルか画像ファイルかを判定
             if (fileName == "w_s.mp4")
             {
+                var attr = new WallContentAttributes();
                 // 動画ファイルの場合の処理
                 attr.Top = true;
                 attr.Category = "00";
+                attr.Sequence = "00";
+                contentList.Add(attr);
             }
             else if (fileName.Length >= 8) // 画像ファイルの場合の処理（最低限の長さを持つファイル名）
             {
-                attr.Top = false;
-                attr.Category = fileName.Substring(0, 6); // w_p_en, w_p_jp, etc.
+                if(fileName.Substring(0, 6) == "w_p_jp") 
+                {
+                    for(int i = 1; i <= 5; i++) 
+                    {
+                        var attr = new WallContentAttributes();
+                        attr.Top = false;
+                        attr.Category = "w_p_jp";
+                        attr.Sequence = i.ToString("D2");
+                        contentList.Add(attr);
+                    }
+                }
+                else if(fileName.Substring(0, 6) == "w_p_en") 
+                {
+                    for(int i = 1; i <= 5; i++) 
+                    {
+                        var attr = new WallContentAttributes();
+                        attr.Top = false;
+                        attr.Category = "w_p_en";
+                        attr.Sequence = i.ToString("D2");
+                        contentList.Add(attr);
+                    }
+                }
+                else if(fileName.Substring(0, 6) == "w_r_jp") 
+                {
+                    for(int i = 1; i <= 2; i++) 
+                    {
+                        var attr = new WallContentAttributes();
+                        attr.Top = false;
+                        attr.Category = "w_r_jp";
+                        attr.Sequence = i.ToString("D2");
+                        contentList.Add(attr);
+                    }
+                }
+                else if(fileName.Substring(0, 6) == "w_r_en") 
+                {
+                    for(int i = 1; i <= 2; i++) 
+                    {
+                        var attr = new WallContentAttributes();
+                        attr.Top = false;
+                        attr.Category = "w_r_en";
+                        attr.Sequence = i.ToString("D2");
+                        contentList.Add(attr);
+                    }
+                }
+                else if(fileName.Substring(0, 6) == "w_u_jp") 
+                {
+                    for(int i = 1; i <= 3; i++) 
+                    {
+                        var attr = new WallContentAttributes();
+                        attr.Top = false;
+                        attr.Category = "w_u_jp";
+                        attr.Sequence = i.ToString("D2");
+                        contentList.Add(attr);
+                    }
+                }
+                else if(fileName.Substring(0, 6) == "w_u_en") 
+                {
+                    for(int i = 1; i <= 3; i++) 
+                    {
+                        var attr = new WallContentAttributes();
+                        attr.Top = false;
+                        attr.Category = "w_u_en";
+                        attr.Sequence = i.ToString("D2");
+                        contentList.Add(attr);
+                    }
+                }
             }
             else
             {
@@ -166,7 +249,7 @@ public class WallContentManager : MonoBehaviour
                 continue; // ファイル名が予期しない形式の場合はスキップ
             }
 
-            contentList.Add(attr);
+            
         }
 
         contentList = contentList
@@ -200,6 +283,87 @@ public class WallContentManager : MonoBehaviour
             {
                 StartCoroutine(SwitchContentWithFadeOut(index));
             }
+        }
+    }
+
+        /// <summary>
+    /// 表示コンテンツを遷移させる
+    /// </summary>
+    private void SwitchContent(string category, string sequenceType)
+    {
+        int index = -1;
+        
+        currentSequence = contentList[currentIndex].Sequence;
+
+        int maxSequence = contentList
+            .Where(c => c.Category == category)
+            .Select(c => int.Parse(c.Sequence))
+            .DefaultIfEmpty(0)  // 空の場合のデフォルト値を 0 に設定
+            .Max();
+
+        switch (sequenceType)
+        {
+            //最初のコンテンツに遷移
+            case "first":
+                index = contentList.FindIndex(c => c.Category == category && c.Sequence == "01");
+                break;
+
+            // 前のコンテンツに遷移
+            case "previous":
+                // 現在がシーケンス1なら何もしない（先頭なので戻れない）
+                if (currentSequence == "01")
+                {
+                    Debug.Log("Already at the first content, cannot go back.");
+                    return; 
+                }
+                // それ以外は1つ前に移動
+                index = currentIndex - 1;
+                break;
+
+            // 次のコンテンツに遷移する場合
+            case "next":
+                if (int.Parse(currentSequence) == maxSequence) 
+                {
+                    Debug.Log("Already at the last content, cannot go next.");
+                    return; 
+                }
+                index = currentIndex + 1;
+                currentCategory = contentList[index].Category;
+                break;
+        }
+
+        if (index != -1 && index != currentIndex)
+        {
+            StartCoroutine(SwitchIsFading(index));
+        }
+    }
+
+    private IEnumerator SwitchIsFading(int index)
+    {
+        isFading = true;
+        Debug.Log("フェードアウトを開始します");
+        yield return StartCoroutine(NotFade(1, 1));
+
+        Debug.Log("コンテンツをロードします");
+        StartCoroutine(SwitchContentWithFadeIn2(index));
+    }
+
+    private IEnumerator NotFade(float from, float to)
+    {
+        float duration = fadeDuration / 2;
+        float counter = 0f;
+
+        CanvasGroup canvasGroup = rawImage.gameObject.GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+        {
+            canvasGroup = rawImage.gameObject.AddComponent<CanvasGroup>();
+        }
+
+        while (counter < duration)
+        {
+            counter += Time.deltaTime;
+            canvasGroup.alpha = Mathf.Lerp(from, to, counter / duration);
+            yield return null;
         }
     }
     
@@ -236,12 +400,27 @@ public class WallContentManager : MonoBehaviour
         StartCoroutine(SwitchContentWithFadeIn(index));
     }
     
+    private IEnumerator SwitchContentWithFadeIn2(int index)
+    {
+        Debug.Log("フェードインを開始します");
+        yield return StartCoroutine(Fade(1, 1));
+
+        currentIndex = index;
+        currentSequence = contentList[currentIndex].Sequence;
+        Debug.Log(currentSequence);
+        Debug.Log("isFadeを解除します");
+        isFading = false;
+    }
+
     private IEnumerator SwitchContentWithFadeIn(int index)
     {
         videoPlayer.Pause();
         
         Debug.Log("フェードインを開始します");
         yield return StartCoroutine(Fade(0, 1));
+        currentIndex = index;
+        currentSequence = contentList[currentIndex].Sequence;
+        Debug.Log(currentSequence);
 
         Debug.Log("コンテンツを再生します");
         PlayContent(index);
@@ -263,6 +442,7 @@ public class WallContentManager : MonoBehaviour
         {
             StartCoroutine(SwitchContentWithFadeOut(index));
         }
+        currentSequence = "00";
         currentCategory = "00";
     }
 
