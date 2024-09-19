@@ -365,6 +365,7 @@ public class TableContentManager : MonoBehaviour
         }
         currentSequence = "00";
         currentCategory = "00";
+        currentSequenceState = "none";
     }
 
     /// <summary>
@@ -380,7 +381,7 @@ public class TableContentManager : MonoBehaviour
 
         int intCurrentSequence = Convert.ToInt32(currentSequence);
 
-        if (intCurrentSequence == maxSequence)
+        if (currentCategory != "00" && intCurrentSequence == maxSequence)
         {
             currentSequenceState = "last";
         }
