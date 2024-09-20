@@ -23,6 +23,9 @@ public class WallContentAttributes
 
 public class WallContentManager : MonoBehaviour
 {
+
+
+
     //動画と画像を表示するレンダーテクスチャを指定
     public RenderTexture renderTexture;
 
@@ -68,6 +71,9 @@ public class WallContentManager : MonoBehaviour
 
          //初回起動時
         InitializeDisplay();
+
+
+
 
         foreach(var content in contentList)
         {
@@ -116,7 +122,9 @@ public class WallContentManager : MonoBehaviour
         }
     }
 
-    // Nキーのナビゲーション処理
+    /// <summary>
+    /// M, B, Nキーのナビゲーション処理
+    /// </summary>
     void HandleNavigationKeys()
     {
         if (Input.GetKeyDown(KeyCode.M))
@@ -136,7 +144,9 @@ public class WallContentManager : MonoBehaviour
         }
     }
 
-    // カテゴリの切り替え処理
+    /// <summary>
+    /// カテゴリの切り替え処理
+    /// </summary>
     void SwitchCategory(string newCategory)
     {
         if (currentCategory != newCategory)
@@ -144,11 +154,13 @@ public class WallContentManager : MonoBehaviour
             currentCategory = newCategory;
             SwitchContent(currentCategory, "first");
         }
+
     }
 
     /// <summary>
     /// 動画と画像が格納されたフォルダにアクセス
     /// ファイルの個数の長さのリストを作成しアトリビュートを格納
+    /// Wall固有の処理：仮想のSequenceを設定しTableとの制御の整合を取る
     /// </summary>
     private void LoadContentFiles()
     {   
@@ -162,6 +174,7 @@ public class WallContentManager : MonoBehaviour
         foreach (var file in files)
         {
             var fileName = Path.GetFileName(file);
+
 
             // 動画ファイルか画像ファイルかを判定
             if (fileName == "w_s.mp4")
@@ -248,6 +261,7 @@ public class WallContentManager : MonoBehaviour
                 continue; // ファイル名が予期しない形式の場合はスキップ
             }
 
+
         }
 
         contentList = contentList
@@ -270,6 +284,7 @@ public class WallContentManager : MonoBehaviour
 
     /// <summary>
     /// 表示コンテンツを遷移させる
+    /// Wall固有の処理：firstとprevious/nextのコルーチン遷移先を分ける
     /// </summary>
     private void SwitchContent(string category, string sequenceType)
     {
@@ -325,45 +340,15 @@ public class WallContentManager : MonoBehaviour
                 }
                 break;
         }
-    }
 
-    /// <summary>
-    /// TableのFadeと整合をとるための処理
-    /// ダミーとしてFade(1,1)の処理が走っている
-    /// </summary>
-    private IEnumerator SwitchIsFading(int index)
-    {
-        isFading = true;
-        displayTimer = 0f;
-        Debug.Log("フェードアウトを開始します");
 
-        float duration = fadeDuration / 2;
-        float counter = 0f;
 
-        CanvasGroup canvasGroup = rawImage.gameObject.GetComponent<CanvasGroup>();
-        if (canvasGroup == null)
-        {
-            canvasGroup = rawImage.gameObject.AddComponent<CanvasGroup>();
-        }
 
-        while (counter < duration)
-        {
-            counter += Time.deltaTime;
-            canvasGroup.alpha = Mathf.Lerp(1, 1, counter / duration);
-            yield return null;
-        }
-
-        Debug.Log("コンテンツをロードします");
-        Debug.Log("フェードインを開始します");
-        yield return StartCoroutine(Fade(1, 1));
-
-        currentIndex = index;
-        currentSequence = contentList[currentIndex].Sequence;
-        Debug.Log(currentSequence);
-        Debug.Log("isFadeを解除します");
-        isFading = false;
     }
     
+    /// <summary>
+    /// フェードアウトを伴って遷移しコンテンツをロードする
+    /// </summary>
     private IEnumerator SwitchContentWithFadeOut(int index)
     {
         isFading = true;
@@ -375,6 +360,10 @@ public class WallContentManager : MonoBehaviour
         LoadContent(index);
     }
 
+    /// <summary>
+    /// ファイルをロードする
+    /// Table固有の処理:ロードしたファイルにあわせてJsonを書き換える
+    /// </summary>
     private async void LoadContent(int index)
     {
         currentIndex = index;
@@ -392,8 +381,13 @@ public class WallContentManager : MonoBehaviour
         {
             string videoPath = "file://" + Path.Combine(desktopPath, "wwo_wall/Assets", content.Category + ".mp4");
             await StartVideoPlaybackAsync(videoPath);
+
+
         }
         Debug.Log("コンテンツのロードが完了しました");
+
+
+
 
         StartCoroutine(SwitchContentWithFadeIn(index));
     }
@@ -404,9 +398,9 @@ public class WallContentManager : MonoBehaviour
         
         Debug.Log("フェードインを開始します");
         yield return StartCoroutine(Fade(0, 1));
-        currentIndex = index;
-        currentSequence = contentList[currentIndex].Sequence;
-        Debug.Log(currentSequence);
+        // currentIndex = index;
+        // currentSequence = contentList[currentIndex].Sequence;
+        // Debug.Log(currentSequence);
 
         Debug.Log("コンテンツを再生します");
         PlayContent(index);
@@ -416,21 +410,6 @@ public class WallContentManager : MonoBehaviour
     private void PlayContent(int index)
     {
         videoPlayer.Play();
-    }
-
-    /// <summary>
-    /// Top表示でない場合、Topに遷移
-    /// </summary>
-    private void SwitchToTop()
-    {
-        displayTimer = 0f;
-        int index = contentList.FindIndex(c => c.Top);
-        if (index != -1 && index != currentIndex)
-        {
-            StartCoroutine(SwitchContentWithFadeOut(index));
-        }
-        currentSequence = "00";
-        currentCategory = "00";
     }
 
     // 非同期処理でビデオの準備を待つメソッド
@@ -466,6 +445,22 @@ public class WallContentManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Top表示でない場合、Topに遷移
+    /// </summary>
+    private void SwitchToTop()
+    {
+        displayTimer = 0f;
+        int index = contentList.FindIndex(c => c.Top);
+        if (index != -1 && index != currentIndex)
+        {
+            StartCoroutine(SwitchContentWithFadeOut(index));
+        }
+        currentSequence = "00";
+        currentCategory = "00";
+
+    }
+    
+    /// <summary>
     /// フェード自体の処理（rawImageのアルファを変更する）
     /// </summary>
     private IEnumerator Fade(float from, float to)
@@ -496,12 +491,56 @@ public class WallContentManager : MonoBehaviour
         videoPlayer.Play();
     }
 
+    /// <summary>
+    /// 効果音を再生（開発端末のみで利用）
+    /// </summary>
     private void PlaySound()
     {
         // 効果音を再生
         audioSource.Play();
     }
 
+    /// <summary>
+    /// Wall固有の関数。
+    /// TableのFadeと整合をとるための処理
+    /// ダミーとしてFade(1,1)の処理が走っている
+    /// </summary>
+    private IEnumerator SwitchIsFading(int index)
+    {
+        isFading = true;
+        displayTimer = 0f;
+        Debug.Log("フェードアウトを開始します");
+
+        float duration = fadeDuration / 2;
+        float counter = 0f;
+
+        CanvasGroup canvasGroup = rawImage.gameObject.GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+        {
+            canvasGroup = rawImage.gameObject.AddComponent<CanvasGroup>();
+        }
+
+        while (counter < duration)
+        {
+            counter += Time.deltaTime;
+            canvasGroup.alpha = Mathf.Lerp(1, 1, counter / duration);
+            yield return null;
+        }
+
+        Debug.Log("コンテンツをロードします");
+        Debug.Log("フェードインを開始します");
+        yield return StartCoroutine(Fade(1, 1));
+
+        currentIndex = index;
+        currentSequence = contentList[currentIndex].Sequence;
+        Debug.Log(currentSequence);
+        Debug.Log("isFadeを解除します");
+        isFading = false;
+    }
+
+    /// <summary>
+    /// コンフィグ用のテキストファイルを読み込み
+    /// </summary>
     private void LoadConfigFile()
     {
         try

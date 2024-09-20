@@ -122,7 +122,9 @@ public class TableContentManager : MonoBehaviour
         }
     }
 
-    // M, B, Nキーのナビゲーション処理
+    /// <summary>
+    /// M, B, Nキーのナビゲーション処理
+    /// </summary>
     void HandleNavigationKeys()
     {
         if (Input.GetKeyDown(KeyCode.M))
@@ -142,7 +144,9 @@ public class TableContentManager : MonoBehaviour
         }
     }
 
-    // カテゴリの切り替え処理
+    /// <summary>
+    /// カテゴリの切り替え処理
+    /// </summary>
     void SwitchCategory(string newCategory)
     {
         if (currentCategory != newCategory)
@@ -156,6 +160,7 @@ public class TableContentManager : MonoBehaviour
     /// <summary>
     /// 動画と画像が格納されたフォルダにアクセス
     /// ファイルの個数の長さのリストを作成しアトリビュートを格納
+    /// 
     /// </summary>
     private void LoadContentFiles()
     {   
@@ -174,10 +179,12 @@ public class TableContentManager : MonoBehaviour
             // 動画ファイルか画像ファイルかを判定
             if (fileName == "t_s.mp4")
             {
+
                 // 動画ファイルの場合の処理
                 attr.Top = true;
                 attr.Category = "00";
                 attr.Sequence = "00";
+
             }
             else if (fileName.Length >= 11) // 画像ファイルの場合の処理（最低限の長さを持つファイル名）
             {
@@ -214,6 +221,7 @@ public class TableContentManager : MonoBehaviour
 
     /// <summary>
     /// 表示コンテンツを遷移させる
+    /// 
     /// </summary>
     private void SwitchContent(string category, string sequenceType)
     {
@@ -232,6 +240,9 @@ public class TableContentManager : MonoBehaviour
             //最初のコンテンツに遷移
             case "first":
                 index = contentList.FindIndex(c => c.Category == category && c.Sequence == "01");
+
+
+
                 break;
 
             // 前のコンテンツに遷移
@@ -244,6 +255,9 @@ public class TableContentManager : MonoBehaviour
                 }
                 // それ以外は1つ前に移動
                 index = currentIndex - 1;
+
+
+
                 break;
 
             // 次のコンテンツに遷移する場合
@@ -255,6 +269,9 @@ public class TableContentManager : MonoBehaviour
                 }
                 index = currentIndex + 1;
                 currentCategory = contentList[index].Category;
+
+
+
                 break;
         }
 
@@ -264,6 +281,9 @@ public class TableContentManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// フェードアウトを伴って遷移しコンテンツをロードする
+    /// </summary>
     private IEnumerator SwitchContentWithFadeOut(int index)
     {
         isFading = true;
@@ -274,6 +294,10 @@ public class TableContentManager : MonoBehaviour
         LoadContent(index);
     }
 
+    /// <summary>
+    /// ファイルをロードする
+    /// Table固有の処理:ロードしたファイルにあわせてJsonを書き換える
+    /// </summary>
     private async void LoadContent(int index)
     {
         currentIndex = index;
@@ -309,6 +333,9 @@ public class TableContentManager : MonoBehaviour
         
         Debug.Log("フェードインを開始します");
         yield return StartCoroutine(Fade(0, 1));
+
+
+
 
         Debug.Log("コンテンツを再生します");
         PlayContent(index);
@@ -357,6 +384,7 @@ public class TableContentManager : MonoBehaviour
     /// </summary>
     private void SwitchToTop()
     {
+
         int index = contentList.FindIndex(c => c.Top);
         if (index != -1 && index != currentIndex)
         {
@@ -365,39 +393,6 @@ public class TableContentManager : MonoBehaviour
         currentSequence = "00";
         currentCategory = "00";
         currentSequenceState = "none";
-    }
-
-    /// <summary>
-    /// PlayContentが終了した後にJsonファイル生成用に現在のシーケンス情報を更新
-    /// </summary>
-    private void ChangeCurrentSequenceState(string category)
-    {
-        currentSequence = contentList[currentIndex].Sequence;
-
-        int maxSequence = contentList
-            .Where(c => c.Category == category)
-            .Max(c => int.Parse(c.Sequence));
-
-        int intCurrentSequence = Convert.ToInt32(currentSequence);
-
-        if (currentCategory != "00" && intCurrentSequence == maxSequence)
-        {
-            currentSequenceState = "last";
-        }
-        else if (intCurrentSequence == 1)
-        {
-            currentSequenceState = "first";
-        }
-        else if(intCurrentSequence != 0)
-        {
-            currentSequenceState = "mid";
-        }
-        else
-        {
-            currentSequenceState = "none";
-        }
-
-        Debug.Log(currentSequenceState);
     }
 
     /// <summary>
@@ -431,10 +426,47 @@ public class TableContentManager : MonoBehaviour
         videoPlayer.Play();
     }
 
+    /// <summary>
+    /// 効果音を再生（開発端末のみで利用）
+    /// </summary>
     private void PlaySound()
     {
         // 効果音を再生
         audioSource.Play();
+    }
+
+    /// <summary>
+    /// Table固有の関数。
+    /// PlayContentが終了した後にJsonファイル生成用に現在のシーケンス情報を更新
+    /// </summary>
+    private void ChangeCurrentSequenceState(string category)
+    {
+        currentSequence = contentList[currentIndex].Sequence;
+
+        int maxSequence = contentList
+            .Where(c => c.Category == category)
+            .Max(c => int.Parse(c.Sequence));
+
+        int intCurrentSequence = Convert.ToInt32(currentSequence);
+
+        if (currentCategory != "00" && intCurrentSequence == maxSequence)
+        {
+            currentSequenceState = "last";
+        }
+        else if (intCurrentSequence == 1)
+        {
+            currentSequenceState = "first";
+        }
+        else if(intCurrentSequence != 0)
+        {
+            currentSequenceState = "mid";
+        }
+        else
+        {
+            currentSequenceState = "none";
+        }
+
+        Debug.Log(currentSequenceState);
     }
 
     // コンテンツが変更された際に呼び出される
@@ -443,6 +475,9 @@ public class TableContentManager : MonoBehaviour
         OnContentChanged?.Invoke();  // デリゲートの呼び出し
     }
 
+    /// <summary>
+    /// コンフィグ用のテキストファイルを読み込み
+    /// </summary>
     private void LoadConfigFile()
     {
         try
