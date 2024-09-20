@@ -142,7 +142,7 @@ public class WallContentManager : MonoBehaviour
         if (currentCategory != newCategory)
         {
             currentCategory = newCategory;
-            SwitchContent(currentCategory);
+            SwitchContent(currentCategory, "first");
         }
     }
 
@@ -252,6 +252,7 @@ public class WallContentManager : MonoBehaviour
 
         contentList = contentList
             .OrderBy(c => c.Top ? "0" : c.Category)  // Top (w_s.mp4) が先頭に来るようにする
+            .ThenBy(c => c.Sequence)
             .ToList();
     }
 
@@ -264,23 +265,6 @@ public class WallContentManager : MonoBehaviour
         if (currentIndex != -1)
         {
             StartCoroutine(SwitchContentWithFadeOut(currentIndex));
-        }
-    }
-
-    /// <summary>
-    /// 表示コンテンツを遷移させる
-    /// </summary>
-    private void SwitchContent(string category)
-    {
-        int index = -1;
-
-        index = contentList.FindIndex(c => c.Category == category);
-
-        if (index != -1 && index != currentIndex)
-        {
-            {
-                StartCoroutine(SwitchContentWithFadeOut(index));
-            }
         }
     }
 
@@ -304,6 +288,10 @@ public class WallContentManager : MonoBehaviour
             //最初のコンテンツに遷移
             case "first":
                 index = contentList.FindIndex(c => c.Category == category && c.Sequence == "01");
+                if (index != -1 && index != currentIndex)
+                {
+                    StartCoroutine(SwitchContentWithFadeOut(index));
+                }
                 break;
 
             // 前のコンテンツに遷移
@@ -316,6 +304,10 @@ public class WallContentManager : MonoBehaviour
                 }
                 // それ以外は1つ前に移動
                 index = currentIndex - 1;
+                if (index != -1 && index != currentIndex)
+                {
+                    StartCoroutine(SwitchIsFading(index));
+                }
                 break;
 
             // 次のコンテンツに遷移する場合
@@ -327,28 +319,24 @@ public class WallContentManager : MonoBehaviour
                 }
                 index = currentIndex + 1;
                 currentCategory = contentList[index].Category;
+                if (index != -1 && index != currentIndex)
+                {
+                    StartCoroutine(SwitchIsFading(index));
+                }
                 break;
-        }
-
-        if (index != -1 && index != currentIndex)
-        {
-            StartCoroutine(SwitchIsFading(index));
         }
     }
 
+    /// <summary>
+    /// TableのFadeと整合をとるための処理
+    /// ダミーとしてFade(1,1)の処理が走っている
+    /// </summary>
     private IEnumerator SwitchIsFading(int index)
     {
         isFading = true;
         displayTimer = 0f;
         Debug.Log("フェードアウトを開始します");
-        yield return StartCoroutine(NotFade(1, 1));
 
-        Debug.Log("コンテンツをロードします");
-        StartCoroutine(SwitchContentWithFadeIn2(index));
-    }
-
-    private IEnumerator NotFade(float from, float to)
-    {
         float duration = fadeDuration / 2;
         float counter = 0f;
 
@@ -361,9 +349,19 @@ public class WallContentManager : MonoBehaviour
         while (counter < duration)
         {
             counter += Time.deltaTime;
-            canvasGroup.alpha = Mathf.Lerp(from, to, counter / duration);
+            canvasGroup.alpha = Mathf.Lerp(1, 1, counter / duration);
             yield return null;
         }
+
+        Debug.Log("コンテンツをロードします");
+        Debug.Log("フェードインを開始します");
+        yield return StartCoroutine(Fade(1, 1));
+
+        currentIndex = index;
+        currentSequence = contentList[currentIndex].Sequence;
+        Debug.Log(currentSequence);
+        Debug.Log("isFadeを解除します");
+        isFading = false;
     }
     
     private IEnumerator SwitchContentWithFadeOut(int index)
@@ -398,18 +396,6 @@ public class WallContentManager : MonoBehaviour
         Debug.Log("コンテンツのロードが完了しました");
 
         StartCoroutine(SwitchContentWithFadeIn(index));
-    }
-    
-    private IEnumerator SwitchContentWithFadeIn2(int index)
-    {
-        Debug.Log("フェードインを開始します");
-        yield return StartCoroutine(Fade(1, 1));
-
-        currentIndex = index;
-        currentSequence = contentList[currentIndex].Sequence;
-        Debug.Log(currentSequence);
-        Debug.Log("isFadeを解除します");
-        isFading = false;
     }
 
     private IEnumerator SwitchContentWithFadeIn(int index)

@@ -150,7 +150,6 @@ public class TableContentManager : MonoBehaviour
             currentCategory = newCategory;
             SwitchContent(currentCategory, "first");
         }
-        currentSequenceState = "first";
         videoPlayer.Stop();
     }
 
