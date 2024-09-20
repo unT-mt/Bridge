@@ -163,7 +163,6 @@ public class WallContentManager : MonoBehaviour
         {
             var fileName = Path.GetFileName(file);
 
-
             // 動画ファイルか画像ファイルかを判定
             if (fileName == "w_s.mp4")
             {
@@ -249,7 +248,6 @@ public class WallContentManager : MonoBehaviour
                 continue; // ファイル名が予期しない形式の場合はスキップ
             }
 
-            
         }
 
         contentList = contentList
@@ -286,7 +284,7 @@ public class WallContentManager : MonoBehaviour
         }
     }
 
-        /// <summary>
+    /// <summary>
     /// 表示コンテンツを遷移させる
     /// </summary>
     private void SwitchContent(string category, string sequenceType)
@@ -341,6 +339,7 @@ public class WallContentManager : MonoBehaviour
     private IEnumerator SwitchIsFading(int index)
     {
         isFading = true;
+        displayTimer = 0f;
         Debug.Log("フェードアウトを開始します");
         yield return StartCoroutine(NotFade(1, 1));
 
@@ -370,6 +369,7 @@ public class WallContentManager : MonoBehaviour
     private IEnumerator SwitchContentWithFadeOut(int index)
     {
         isFading = true;
+        displayTimer = 0f;
         Debug.Log("フェードアウトを開始します");
         yield return StartCoroutine(Fade(1, 0));
 
@@ -437,6 +437,7 @@ public class WallContentManager : MonoBehaviour
     /// </summary>
     private void SwitchToTop()
     {
+        displayTimer = 0f;
         int index = contentList.FindIndex(c => c.Top);
         if (index != -1 && index != currentIndex)
         {
