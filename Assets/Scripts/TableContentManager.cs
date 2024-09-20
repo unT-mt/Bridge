@@ -58,7 +58,7 @@ public class TableContentManager : MonoBehaviour
         LoadConfigFile(); 
 
         //所定のフォルダからコンテンツをロードする
-        LoadContentFiles();
+        InitializeContentList();
         
         //コンポーネントの取得
         videoPlayer = gameObject.AddComponent<VideoPlayer>();
@@ -92,7 +92,7 @@ public class TableContentManager : MonoBehaviour
             // タイムアウト処理
             if (displayTimer >= timeoutDuration && !contentList[currentIndex].Top)
             {
-                SwitchToTop();
+                ReturnToTopContent();
             }
 
             // キーとカテゴリの対応を辞書で管理
@@ -115,7 +115,7 @@ public class TableContentManager : MonoBehaviour
                 if (Input.GetKeyDown(entry.Key))
                 {
                     PlaySound();
-                    SwitchCategory(entry.Value);
+                    ChangeContentCategory(entry.Value);
                     break;
                 }
             }
@@ -130,29 +130,29 @@ public class TableContentManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.M))
         {
             PlaySound();
-            if (currentIndex != 0) SwitchContent(currentCategory, "next");
+            if (currentIndex != 0) NavigateContentSequence(currentCategory, "next");
         }
         else if (Input.GetKeyDown(KeyCode.B))
         {
             PlaySound();
-            if (currentIndex != 0) SwitchContent(currentCategory, "previous");
+            if (currentIndex != 0) NavigateContentSequence(currentCategory, "previous");
         }
         else if (Input.GetKeyDown(KeyCode.N))
         {
             PlaySound();
-            SwitchToTop();
+            ReturnToTopContent();
         }
     }
 
     /// <summary>
     /// カテゴリの切り替え処理
     /// </summary>
-    void SwitchCategory(string newCategory)
+    void ChangeContentCategory(string newCategory)
     {
         if (currentCategory != newCategory)
         {
             currentCategory = newCategory;
-            SwitchContent(currentCategory, "first");
+            NavigateContentSequence(currentCategory, "first");
         }
         videoPlayer.Stop();
     }
@@ -162,7 +162,7 @@ public class TableContentManager : MonoBehaviour
     /// ファイルの個数の長さのリストを作成しアトリビュートを格納
     /// 
     /// </summary>
-    private void LoadContentFiles()
+    private void InitializeContentList()
     {   
         //リストを作成しファイルごとのアトリビュートを設定できるようにする
         contentList = new List<TableContentAttributes>();
@@ -215,7 +215,7 @@ public class TableContentManager : MonoBehaviour
         currentIndex = contentList.FindIndex(c => c.Top);
         if (currentIndex != -1)
         {
-            StartCoroutine(SwitchContentWithFadeOut(currentIndex));
+            StartCoroutine(FadeOutAndLoadContent(currentIndex));
         }
     }
 
@@ -223,7 +223,7 @@ public class TableContentManager : MonoBehaviour
     /// 表示コンテンツを遷移させる
     /// 
     /// </summary>
-    private void SwitchContent(string category, string sequenceType)
+    private void NavigateContentSequence(string category, string sequenceType)
     {
         int index = -1;
         
@@ -277,28 +277,28 @@ public class TableContentManager : MonoBehaviour
 
         if (index != -1 && index != currentIndex)
         {
-            StartCoroutine(SwitchContentWithFadeOut(index));
+            StartCoroutine(FadeOutAndLoadContent(index));
         }
     }
 
     /// <summary>
     /// フェードアウトを伴って遷移しコンテンツをロードする
     /// </summary>
-    private IEnumerator SwitchContentWithFadeOut(int index)
+    private IEnumerator FadeOutAndLoadContent(int index)
     {
         isFading = true;
         Debug.Log("フェードアウトを開始します");
         yield return StartCoroutine(Fade(1, 0));
 
         Debug.Log("コンテンツをロードします");
-        LoadContent(index);
+        DisplayContent(index);
     }
 
     /// <summary>
     /// ファイルをロードする
     /// Table固有の処理:ロードしたファイルにあわせてJsonを書き換える
     /// </summary>
-    private async void LoadContent(int index)
+    private async void DisplayContent(int index)
     {
         currentIndex = index;
         displayTimer = 0f;
@@ -323,11 +323,11 @@ public class TableContentManager : MonoBehaviour
         ChangeCurrentSequenceState(currentCategory);
         ConvertButtonStateToJsonFile();
 
-        StartCoroutine(SwitchContentWithFadeIn(index));
+        StartCoroutine(FadeInAfterLoadingContent(index));
     }
 
     
-    private IEnumerator SwitchContentWithFadeIn(int index)
+    private IEnumerator FadeInAfterLoadingContent(int index)
     {
         videoPlayer.Pause();
         
@@ -382,13 +382,13 @@ public class TableContentManager : MonoBehaviour
     /// <summary>
     /// Top表示でない場合、Topに遷移
     /// </summary>
-    private void SwitchToTop()
+    private void ReturnToTopContent()
     {
 
         int index = contentList.FindIndex(c => c.Top);
         if (index != -1 && index != currentIndex)
         {
-            StartCoroutine(SwitchContentWithFadeOut(index));
+            StartCoroutine(FadeOutAndLoadContent(index));
         }
         currentSequence = "00";
         currentCategory = "00";
@@ -436,7 +436,6 @@ public class TableContentManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Table固有の関数。
     /// PlayContentが終了した後にJsonファイル生成用に現在のシーケンス情報を更新
     /// </summary>
     private void ChangeCurrentSequenceState(string category)
