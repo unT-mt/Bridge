@@ -386,7 +386,7 @@ public class WallContentManager : MonoBehaviour
         }
         Debug.Log("コンテンツのロードが完了しました");
 
-
+        ChangeCurrentSequenceState(currentCategory);
 
 
         StartCoroutine(SwitchContentWithFadeIn(index));
@@ -457,7 +457,7 @@ public class WallContentManager : MonoBehaviour
         }
         currentSequence = "00";
         currentCategory = "00";
-
+        currentSequenceState = "none";
     }
     
     /// <summary>
@@ -499,6 +499,39 @@ public class WallContentManager : MonoBehaviour
         // 効果音を再生
         audioSource.Play();
     }
+    
+    /// <summary>
+    /// PlayContentが終了した後にJsonファイル生成用に現在のシーケンス情報を更新
+    /// </summary>
+    private void ChangeCurrentSequenceState(string category)
+    {
+        currentSequence = contentList[currentIndex].Sequence;
+
+        int maxSequence = contentList
+            .Where(c => c.Category == category)
+            .Max(c => int.Parse(c.Sequence));
+
+        int intCurrentSequence = Convert.ToInt32(currentSequence);
+
+        if (currentCategory != "00" && intCurrentSequence == maxSequence)
+        {
+            currentSequenceState = "last";
+        }
+        else if (intCurrentSequence == 1)
+        {
+            currentSequenceState = "first";
+        }
+        else if(intCurrentSequence != 0)
+        {
+            currentSequenceState = "mid";
+        }
+        else
+        {
+            currentSequenceState = "none";
+        }
+
+        Debug.Log(currentSequenceState);
+    }
 
     /// <summary>
     /// Wall固有の関数。
@@ -533,6 +566,7 @@ public class WallContentManager : MonoBehaviour
 
         currentIndex = index;
         currentSequence = contentList[currentIndex].Sequence;
+        ChangeCurrentSequenceState(currentCategory);
         Debug.Log(currentSequence);
         Debug.Log("isFadeを解除します");
         isFading = false;
