@@ -1,461 +1,517 @@
-// using System;
-// using System.Collections;
-// using System.Collections.Generic;
-// using System.Threading.Tasks;
-// using System.IO;
-// using System.Linq;
-// using UnityEngine;
-// using UnityEngine.UI;
-// using UnityEngine.Video;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.IO;
+using System.Linq;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.Video;
 
-// //各ファイルが持つアトリビュート
-// public class ContentAttributes
-// {
-//     //Top動画であればtrue、それ以外の画像はfalse
-//     public bool Top { get; set; }
+//各ファイルが持つアトリビュート
+public class BaseContentAttributes
+{
+    //Top動画であればtrue、それ以外の画像はfalse
+    public bool Top { get; set; }
 
-//     //画像のうち、F, G, H, J, K, Lどのカテゴリに対応したコンテンツか
-//     public string Category { get; set; }
+    //画像のうち、F, G, H, J, K, Lどのカテゴリに対応したコンテンツか
+    public string Category { get; set; }
 
-//     //画像のうち、各カテゴリの何番目の画像か
-//     public string Sequence { get; set; }
-// }
+    //画像のうち、各カテゴリの何番目の画像か
+    public string Sequence { get; set; }
+}
 
-// public class BaseContentManager : MonoBehaviour
-// {
-//     //動画と画像を表示するレンダーテクスチャを指定
-//     public RenderTexture renderTexture;
+public class BaseContentManager : MonoBehaviour
+{
+    // Jsonファイル上書きのためのデリゲートの定義
+    public Action OnContentChanged;
 
-//     //フェードの持続時間を指定
-//     [ReadOnly]public float fadeDuration = 1.0f;
+    //動画と画像を表示するレンダーテクスチャを指定
+    public RenderTexture renderTexture;
 
-//     //自オブジェクトにアタッチするUnityコンポーネント
-//     protected  VideoPlayer videoPlayer;
-//     protected  RawImage rawImage;
-//     protected  Texture2D imageTexture;
-//     protected  AudioSource audioSource;
+    //フェードの持続時間を指定
+    [ReadOnly]public float fadeDuration = 1.0f;
 
-//     //ファイルをリストで管理し、同時に現在のインデックスを保持する
-//     protected  List<ContentAttributes> contentList;
-//     protected  int currentIndex = 0;
-//     [ReadOnly]public string currentCategory = "00"; 
-//     [ReadOnly]public string currentSequence = "00"; 
-//     [ReadOnly]public string currentSequenceState = "none"; 
+    //自オブジェクトにアタッチするUnityコンポーネント
+    private VideoPlayer videoPlayer;
+    private RawImage rawImage;
+    private Texture2D imageTexture;
+    private AudioSource audioSource;
 
-//     //タイムアウトの処理のための変数
-//     [ReadOnly]public float timeoutDuration = 60f;
-//     protected  float displayTimer;
+    //ファイルをリストで管理し、同時に現在のインデックスを保持する
+    private List<TableContentAttributes> contentList;
+    private int currentIndex = 0;
+    [ReadOnly]public string currentCategory = "00"; 
+    [ReadOnly]public string currentSequence = "00"; 
+    [ReadOnly]public string currentSequenceState = "none"; 
 
-//     //フェード処理のための変数
-//     protected  bool isFading = false;
+    //タイムアウトの処理のための変数
+    [ReadOnly]public float timeoutDuration = 60f;
+    private float displayTimer;
 
-//     protected virtual void Start()
-//     {
-//         //所定のフォルダからコンテンツをロードする
-//         LoadContentFiles();
+    //フェード処理のための変数
+    private bool isFading = false;
+
+    void Start()
+    {
+        //configファイルのロード
+        LoadConfigFile(); 
+
+        //所定のフォルダからコンテンツをロードする
+        InitializeContentList();
         
-//         //コンポーネントの取得
-//         videoPlayer = gameObject.AddComponent<VideoPlayer>();
-//         rawImage = gameObject.GetComponent<RawImage>();
-//         imageTexture = new Texture2D(2, 2);
-//         audioSource = gameObject.GetComponent<AudioSource>();
+        //コンポーネントの取得
+        videoPlayer = gameObject.AddComponent<VideoPlayer>();
+        rawImage = gameObject.GetComponent<RawImage>();
+        imageTexture = new Texture2D(2, 2);
+        audioSource = gameObject.GetComponent<AudioSource>();
 
-//         // 動画の再生終了時のコールバックを設定
-//         videoPlayer.loopPointReached += OnVideoEnd;
+        // 動画の再生終了時のコールバックを設定
+        videoPlayer.loopPointReached += OnVideoEnd;
 
-//          //初回起動時
-//         InitializeDisplay();
-//     }
+         //初回起動時
+        InitializeDisplay();
 
-//     void Update()
-//     {
-//         // タイマーを用意しタイムアウト時にTopへ遷移
-//         displayTimer += Time.deltaTime;
+        // Jsonファイルの出力
+        ConvertButtonStateToJsonFile();
 
-//         if (!isFading)
-//         {
-//             // タイムアウト処理
-//             if (displayTimer >= timeoutDuration && !contentList[currentIndex].Top)
-//             {
-//                 SwitchToTop();
-//             }
+        foreach(var content in contentList)
+        {
+            Debug.Log(content.Category);
+            Debug.Log(content.Sequence);
+        }
+    }
 
-//             // キーとカテゴリの対応を辞書で管理
-//             var keyToCategory = new Dictionary<KeyCode, string>
-//             {
-//                 { KeyCode.F, "t_p_jp" },
-//                 { KeyCode.G, "t_p_en" },
-//                 { KeyCode.H, "t_r_jp" },
-//                 { KeyCode.J, "t_r_en" },
-//                 { KeyCode.K, "t_u_jp" },
-//                 { KeyCode.L, "t_u_en" }
-//             };
+    void Update()
+    {
+        // タイマーを用意しタイムアウト時にTopへ遷移
+        displayTimer += Time.deltaTime;
 
-//             // M, B, Nキーの処理
-//             HandleNavigationKeys();
+        if (!isFading)
+        {
+            // タイムアウト処理
+            if (displayTimer >= timeoutDuration && !contentList[currentIndex].Top)
+            {
+                ReturnToTopContent();
+            }
 
-//             // カテゴリに応じたキー入力の処理
-//             foreach (var entry in keyToCategory)
-//             {
-//                 if (Input.GetKeyDown(entry.Key))
-//                 {
-//                     PlaySound();
-//                     SwitchCategory(entry.Value);
-//                     break;
-//                 }
-//             }
-//         }
-//     }
+            // キーとカテゴリの対応を辞書で管理
+            var keyToCategory = new Dictionary<KeyCode, string>
+            {
+                { KeyCode.F, "t_p_jp" },
+                { KeyCode.G, "t_p_en" },
+                { KeyCode.H, "t_r_jp" },
+                { KeyCode.J, "t_r_en" },
+                { KeyCode.K, "t_u_jp" },
+                { KeyCode.L, "t_u_en" }
+            };
 
-//     // M, B, Nキーのナビゲーション処理
-//     void HandleNavigationKeys()
-//     {
-//         if (Input.GetKeyDown(KeyCode.M))
-//         {
-//             PlaySound();
-//             if (currentIndex != 0) SwitchContent(currentCategory, "next");
-//         }
-//         else if (Input.GetKeyDown(KeyCode.B))
-//         {
-//             PlaySound();
-//             if (currentIndex != 0) SwitchContent(currentCategory, "previous");
-//         }
-//         else if (Input.GetKeyDown(KeyCode.N))
-//         {
-//             PlaySound();
-//             SwitchToTop();
-//         }
-//     }
+            // M, B, Nキーの処理
+            HandleNavigationKeys();
 
-//     // カテゴリの切り替え処理
-//     void SwitchCategory(string newCategory)
-//     {
-//         if (currentCategory != newCategory)
-//         {
-//             currentCategory = newCategory;
-//             SwitchContent(currentCategory, "first");
-//         }
-//         currentSequenceState = "first";
-//         videoPlayer.Stop();
-//     }
+            // カテゴリに応じたキー入力の処理
+            foreach (var entry in keyToCategory)
+            {
+                if (Input.GetKeyDown(entry.Key))
+                {
+                    PlaySound();
+                    ChangeContentCategory(entry.Value);
+                    break;
+                }
+            }
+        }
+    }
 
-//     /// <summary>
-//     /// 動画と画像が格納されたフォルダにアクセス
-//     /// ファイルの個数の長さのリストを作成しアトリビュートを格納
-//     /// </summary>
-//     private void LoadContentFiles()
-//     {   
-//         //リストを作成しファイルごとのアトリビュートを設定できるようにする
-//         contentList = new List<ContentAttributes>();
+    /// <summary>
+    /// M, B, Nキーのナビゲーション処理
+    /// </summary>
+    void HandleNavigationKeys()
+    {
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+            PlaySound();
+            if (currentIndex != 0) NavigateContentSequence(currentCategory, "next");
+        }
+        else if (Input.GetKeyDown(KeyCode.B))
+        {
+            PlaySound();
+            if (currentIndex != 0) NavigateContentSequence(currentCategory, "previous");
+        }
+        else if (Input.GetKeyDown(KeyCode.N))
+        {
+            PlaySound();
+            ReturnToTopContent();
+        }
+    }
 
-//         //システムからパスを取得
-//         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-//         string[] files = Directory.GetFiles(Path.Combine(desktopPath, "wwo_table/Assets"));
+    /// <summary>
+    /// カテゴリの切り替え処理
+    /// </summary>
+    void ChangeContentCategory(string newCategory)
+    {
+        if (currentCategory != newCategory)
+        {
+            currentCategory = newCategory;
+            NavigateContentSequence(currentCategory, "first");
+        }
+        videoPlayer.Stop();
+    }
 
-//         foreach (var file in files)
-//         {
-//             var fileName = Path.GetFileName(file);
-//             var attr = new ContentAttributes();
+    /// <summary>
+    /// 動画と画像が格納されたフォルダにアクセス
+    /// ファイルの個数の長さのリストを作成しアトリビュートを格納
+    /// 
+    /// </summary>
+    private void InitializeContentList()
+    {   
+        //リストを作成しファイルごとのアトリビュートを設定できるようにする
+        contentList = new List<TableContentAttributes>();
 
-//             // 動画ファイルか画像ファイルかを判定
-//             if (fileName == "t_s.mp4")
-//             {
-//                 // 動画ファイルの場合の処理
-//                 attr.Top = true;
-//                 attr.Category = "00";
-//                 attr.Sequence = "00";
-//             }
-//             else if (fileName.Length >= 11) // 画像ファイルの場合の処理（最低限の長さを持つファイル名）
-//             {
-//                 attr.Top = false;
-//                 attr.Category = fileName.Substring(0, 6); // t_p_en, t_p_jp, etc.
-//                 attr.Sequence = fileName.Substring(7, 2); // 01, 02, etc.
-//             }
-//             else
-//             {
-//                 Debug.LogWarning("Unexpected file name format: " + fileName);
-//                 continue; // ファイル名が予期しない形式の場合はスキップ
-//             }
+        //システムからパスを取得
+        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        string[] files = Directory.GetFiles(Path.Combine(desktopPath, "wwo_table/Assets"));
 
-//             contentList.Add(attr);
-//         }
+        foreach (var file in files)
+        {
+            var fileName = Path.GetFileName(file);
+            var attr = new TableContentAttributes();
 
-//         contentList = contentList
-//             .OrderBy(c => c.Top ? "0" : c.Category)  // Top (t_s.mp4) が先頭に来るようにする
-//             .ThenBy(c => c.Sequence)
-//             .ToList();
-//     }
+            // 動画ファイルか画像ファイルかを判定
+            if (fileName == "t_s.mp4")
+            {
 
-//     /// <summary>
-//     /// 表示の初期化
-//     /// </summary>
-//     private void InitializeDisplay()
-//     {
-//         currentIndex = contentList.FindIndex(c => c.Top);
-//         if (currentIndex != -1)
-//         {
-//             StartCoroutine(SwitchContentWithFadeOut(currentIndex));
-//         }
-//     }
+                // 動画ファイルの場合の処理
+                attr.Top = true;
+                attr.Category = "00";
+                attr.Sequence = "00";
 
-//     /// <summary>
-//     /// 表示コンテンツを遷移させる
-//     /// </summary>
-//     private void SwitchContent(string category, string sequenceType)
-//     {
-//         int index = -1;
+            }
+            else if (fileName.Length >= 11) // 画像ファイルの場合の処理（最低限の長さを持つファイル名）
+            {
+                attr.Top = false;
+                attr.Category = fileName.Substring(0, 6); // t_p_en, t_p_jp, etc.
+                attr.Sequence = fileName.Substring(7, 2); // 01, 02, etc.
+            }
+            else
+            {
+                Debug.LogWarning("Unexpected file name format: " + fileName);
+                continue; // ファイル名が予期しない形式の場合はスキップ
+            }
+
+            contentList.Add(attr);
+        }
+
+        contentList = contentList
+            .OrderBy(c => c.Top ? "0" : c.Category)  // Top (t_s.mp4) が先頭に来るようにする
+            .ThenBy(c => c.Sequence)
+            .ToList();
+    }
+
+    /// <summary>
+    /// 表示の初期化
+    /// </summary>
+    private void InitializeDisplay()
+    {
+        currentIndex = contentList.FindIndex(c => c.Top);
+        if (currentIndex != -1)
+        {
+            StartCoroutine(FadeOutAndLoadContent(currentIndex));
+        }
+    }
+
+    /// <summary>
+    /// 表示コンテンツを遷移させる
+    /// 
+    /// </summary>
+    private void NavigateContentSequence(string category, string sequenceType)
+    {
+        int index = -1;
         
-//         currentSequence = contentList[currentIndex].Sequence;
+        currentSequence = contentList[currentIndex].Sequence;
 
-//         int maxSequence = contentList
-//             .Where(c => c.Category == category)
-//             .Select(c => int.Parse(c.Sequence))
-//             .DefaultIfEmpty(0)  // 空の場合のデフォルト値を 0 に設定
-//             .Max();
+        int maxSequence = contentList
+            .Where(c => c.Category == category)
+            .Select(c => int.Parse(c.Sequence))
+            .DefaultIfEmpty(0)  // 空の場合のデフォルト値を 0 に設定
+            .Max();
 
-//         switch (sequenceType)
-//         {
-//             //最初のコンテンツに遷移
-//             case "first":
-//                 index = contentList.FindIndex(c => c.Category == category && c.Sequence == "01");
-//                 break;
+        switch (sequenceType)
+        {
+            //最初のコンテンツに遷移
+            case "first":
+                index = contentList.FindIndex(c => c.Category == category && c.Sequence == "01");
 
-//             // 前のコンテンツに遷移
-//             case "previous":
-//                 // 現在がシーケンス1なら何もしない（先頭なので戻れない）
-//                 if (currentSequence == "01")
-//                 {
-//                     Debug.Log("Already at the first content, cannot go back.");
-//                     return; 
-//                 }
-//                 // それ以外は1つ前に移動
-//                 index = currentIndex - 1;
-//                 break;
 
-//             // 次のコンテンツに遷移する場合
-//             case "next":
-//                 if (int.Parse(currentSequence) == maxSequence) 
-//                 {
-//                     Debug.Log("Already at the last content, cannot go next.");
-//                     return; 
-//                 }
-//                 index = currentIndex + 1;
-//                 currentCategory = contentList[index].Category;
-//                 break;
-//         }
 
-//         if (index != -1 && index != currentIndex)
-//         {
-//             StartCoroutine(SwitchContentWithFadeOut(index));
-//         }
-//     }
+                break;
 
-//     private IEnumerator SwitchContentWithFadeOut(int index)
-//     {
-//         isFading = true;
-//         Debug.Log("フェードアウトを開始します");
-//         yield return StartCoroutine(Fade(1, 0));
+            // 前のコンテンツに遷移
+            case "previous":
+                // 現在がシーケンス1なら何もしない（先頭なので戻れない）
+                if (currentSequence == "01")
+                {
+                    Debug.Log("Already at the first content, cannot go back.");
+                    return; 
+                }
+                // それ以外は1つ前に移動
+                index = currentIndex - 1;
 
-//         Debug.Log("コンテンツをロードします");
-//         LoadContent(index);
-//     }
 
-//     private async void LoadContent(int index)
-//     {
-//         currentIndex = index;
-//         displayTimer = 0f;
 
-//         var content = contentList[index];
-//         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                break;
 
-//         if (content.Top)
-//         {
-//             string videoPath = "file://" + Path.Combine(desktopPath, "wwo_table/Assets", "t_s.mp4");
-//             await StartVideoPlaybackAsync(videoPath);
-//         }
-//         else
-//         {
-//             string imagePath = "file://" + Path.Combine(desktopPath, "wwo_table/Assets", content.Category + "_" + content.Sequence + ".png");
-//             byte[] imageBytes = File.ReadAllBytes(imagePath.Substring(7));
-//             imageTexture.LoadImage(imageBytes);
-//             rawImage.texture = imageTexture;
-//         }
-//         Debug.Log("コンテンツのロードが完了しました");
+            // 次のコンテンツに遷移する場合
+            case "next":
+                if (int.Parse(currentSequence) == maxSequence) 
+                {
+                    Debug.Log("Already at the last content, cannot go next.");
+                    return; 
+                }
+                index = currentIndex + 1;
+                currentCategory = contentList[index].Category;
 
-//         ChangeCurrentSequenceState(currentCategory);
 
-//         StartCoroutine(SwitchContentWithFadeIn(index));
-//     }
+
+                break;
+        }
+
+        if (index != -1 && index != currentIndex)
+        {
+            StartCoroutine(FadeOutAndLoadContent(index));
+        }
+    }
+
+    /// <summary>
+    /// フェードアウトを伴って遷移しコンテンツをロードする
+    /// </summary>
+    private IEnumerator FadeOutAndLoadContent(int index)
+    {
+        isFading = true;
+        Debug.Log("フェードアウトを開始します");
+        yield return StartCoroutine(Fade(1, 0));
+
+        Debug.Log("コンテンツをロードします");
+        DisplayContent(index);
+    }
+
+    /// <summary>
+    /// ファイルをロードする
+    /// Table固有の処理:ロードしたファイルにあわせてJsonを書き換える
+    /// </summary>
+    private async void DisplayContent(int index)
+    {
+        currentIndex = index;
+        displayTimer = 0f;
+
+        var content = contentList[index];
+        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+        if (content.Top)
+        {
+            string videoPath = "file://" + Path.Combine(desktopPath, "wwo_table/Assets", "t_s.mp4");
+            await StartVideoPlaybackAsync(videoPath);
+        }
+        else
+        {
+            string imagePath = "file://" + Path.Combine(desktopPath, "wwo_table/Assets", content.Category + "_" + content.Sequence + ".png");
+            byte[] imageBytes = File.ReadAllBytes(imagePath.Substring(7));
+            imageTexture.LoadImage(imageBytes);
+            rawImage.texture = imageTexture;
+        }
+        Debug.Log("コンテンツのロードが完了しました");
+
+        ChangeCurrentSequenceState(currentCategory);
+        ConvertButtonStateToJsonFile();
+
+        StartCoroutine(FadeInAfterLoadingContent(index));
+    }
 
     
-//     private IEnumerator SwitchContentWithFadeIn(int index)
-//     {
-//         videoPlayer.Pause();
+    private IEnumerator FadeInAfterLoadingContent(int index)
+    {
+        videoPlayer.Pause();
         
-//         Debug.Log("フェードインを開始します");
-//         yield return StartCoroutine(Fade(0, 1));
+        Debug.Log("フェードインを開始します");
+        yield return StartCoroutine(Fade(0, 1));
 
-//         Debug.Log("コンテンツを再生します");
-//         PlayContent(index);
-//         isFading = false;
-//     }
 
-//     private void PlayContent(int index)
-//     {
-//         videoPlayer.Play();
-//     }
 
-//     // 非同期処理でビデオの準備を待つメソッド
-//     private async Task StartVideoPlaybackAsync(string videoPath)
-//     {
-//         videoPlayer.url = videoPath;
-//         videoPlayer.targetTexture = renderTexture;
-//         rawImage.texture = renderTexture;
 
-//         // 動画の準備が完了するまで待機
-//         videoPlayer.Prepare();
+        Debug.Log("コンテンツを再生します");
+        PlayContent(index);
+        isFading = false;
+    }
 
-//         // PrepareCompletedイベントの完了を非同期に待つ
-//         await WaitForVideoPrepared();
+    private void PlayContent(int index)
+    {
+        videoPlayer.Play();
+    }
 
-//         Debug.Log("コンテンツの準備が完了しました");
-//     }
+    // 非同期処理でビデオの準備を待つメソッド
+    private async Task StartVideoPlaybackAsync(string videoPath)
+    {
+        videoPlayer.url = videoPath;
+        videoPlayer.targetTexture = renderTexture;
+        rawImage.texture = renderTexture;
 
-//     // 動画の準備が完了するまで待つタスク
-//     private Task WaitForVideoPrepared()
-//     {
-//         var tcs = new TaskCompletionSource<bool>();
+        // 動画の準備が完了するまで待機
+        videoPlayer.Prepare();
 
-//         void OnPrepared(VideoPlayer source)
-//         {
-//             videoPlayer.prepareCompleted -= OnPrepared;
-//             tcs.SetResult(true);
-//         }
+        // PrepareCompletedイベントの完了を非同期に待つ
+        await WaitForVideoPrepared();
 
-//         videoPlayer.prepareCompleted += OnPrepared;
+        Debug.Log("コンテンツの準備が完了しました");
+    }
 
-//         return tcs.Task;
-//     }
+    // 動画の準備が完了するまで待つタスク
+    private Task WaitForVideoPrepared()
+    {
+        var tcs = new TaskCompletionSource<bool>();
 
-//     /// <summary>
-//     /// Top表示でない場合、Topに遷移
-//     /// </summary>
-//     private void SwitchToTop()
-//     {
-//         int index = contentList.FindIndex(c => c.Top);
-//         if (index != -1 && index != currentIndex)
-//         {
-//             StartCoroutine(SwitchContentWithFadeOut(index));
-//         }
-//         currentSequence = "00";
-//         currentCategory = "00";
-//     }
+        void OnPrepared(VideoPlayer source)
+        {
+            videoPlayer.prepareCompleted -= OnPrepared;
+            tcs.SetResult(true);
+        }
 
-//     /// <summary>
-//     /// PlayContentが終了した後にJsonファイル生成用に現在のシーケンス情報を更新
-//     /// </summary>
-//     private void ChangeCurrentSequenceState(string category)
-//     {
-//         currentSequence = contentList[currentIndex].Sequence;
+        videoPlayer.prepareCompleted += OnPrepared;
 
-//         int maxSequence = contentList
-//             .Where(c => c.Category == category)
-//             .Max(c => int.Parse(c.Sequence));
+        return tcs.Task;
+    }
 
-//         int intCurrentSequence = Convert.ToInt32(currentSequence);
+    /// <summary>
+    /// Top表示でない場合、Topに遷移
+    /// </summary>
+    private void ReturnToTopContent()
+    {
 
-//         if (intCurrentSequence == maxSequence)
-//         {
-//             currentSequenceState = "last";
-//         }
-//         else if (intCurrentSequence == 1)
-//         {
-//             currentSequenceState = "first";
-//         }
-//         else if(intCurrentSequence != 0)
-//         {
-//             currentSequenceState = "mid";
-//         }
-//         else
-//         {
-//             currentSequenceState = "none";
-//         }
+        int index = contentList.FindIndex(c => c.Top);
+        if (index != -1 && index != currentIndex)
+        {
+            StartCoroutine(FadeOutAndLoadContent(index));
+        }
+        currentSequence = "00";
+        currentCategory = "00";
+        currentSequenceState = "none";
+    }
 
-//         Debug.Log(currentSequenceState);
-//     }
+    /// <summary>
+    /// フェード自体の処理（rawImageのアルファを変更する）
+    /// </summary>
+    private IEnumerator Fade(float from, float to)
+    {
+        float duration = fadeDuration / 2;
+        float counter = 0f;
 
-//     /// <summary>
-//     /// フェード自体の処理（rawImageのアルファを変更する）
-//     /// </summary>
-//     private IEnumerator Fade(float from, float to)
-//     {
-//         float duration = fadeDuration / 2;
-//         float counter = 0f;
+        CanvasGroup canvasGroup = rawImage.gameObject.GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+        {
+            canvasGroup = rawImage.gameObject.AddComponent<CanvasGroup>();
+        }
 
-//         CanvasGroup canvasGroup = rawImage.gameObject.GetComponent<CanvasGroup>();
-//         if (canvasGroup == null)
-//         {
-//             canvasGroup = rawImage.gameObject.AddComponent<CanvasGroup>();
-//         }
+        while (counter < duration)
+        {
+            counter += Time.deltaTime;
+            canvasGroup.alpha = Mathf.Lerp(from, to, counter / duration);
+            yield return null;
+        }
+    }
 
-//         while (counter < duration)
-//         {
-//             counter += Time.deltaTime;
-//             canvasGroup.alpha = Mathf.Lerp(from, to, counter / duration);
-//             yield return null;
-//         }
-//     }
+    /// <summary>
+    /// ビデオの終了時の処理（再度ビデオを再生）
+    /// </summary>
+    private void OnVideoEnd(VideoPlayer vp)
+    {
+        // 動画再生終了時に再度再生
+        videoPlayer.Play();
+    }
 
-//     /// <summary>
-//     /// ビデオの終了時の処理（再度ビデオを再生）
-//     /// </summary>
-//     private void OnVideoEnd(VideoPlayer vp)
-//     {
-//         // 動画再生終了時に再度再生
-//         videoPlayer.Play();
-//     }
+    /// <summary>
+    /// 効果音を再生（開発端末のみで利用）
+    /// </summary>
+    private void PlaySound()
+    {
+        // 効果音を再生
+        audioSource.Play();
+    }
 
-//     private void PlaySound()
-//     {
-//         // 効果音を再生
-//         audioSource.Play();
-//     }
+    /// <summary>
+    /// PlayContentが終了した後にJsonファイル生成用に現在のシーケンス情報を更新
+    /// </summary>
+    private void ChangeCurrentSequenceState(string category)
+    {
+        currentSequence = contentList[currentIndex].Sequence;
 
-//     private void LoadConfigFile()
-//     {
-//         try
-//         {
-//             string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-//             string configFilePath = Path.Combine(desktopPath, "wwo_table", "config.txt");
+        int maxSequence = contentList
+            .Where(c => c.Category == category)
+            .Max(c => int.Parse(c.Sequence));
 
-//             if (File.Exists(configFilePath))
-//             {
-//                 string[] lines = File.ReadAllLines(configFilePath);
+        int intCurrentSequence = Convert.ToInt32(currentSequence);
 
-//                 foreach (var line in lines)
-//                 {
-//                     if (line.StartsWith("fadeDuration"))
-//                     {
-//                         string fadeValue = line.Split('=')[1].Trim().Replace("f", "");
-//                         fadeDuration = float.Parse(fadeValue);
-//                     }
-//                     else if (line.StartsWith("timeoutDuration"))
-//                     {
-//                         string timeoutValue = line.Split('=')[1].Trim().Replace("f", "");
-//                         timeoutDuration = float.Parse(timeoutValue);
-//                     }
-//                 }
+        if (currentCategory != "00" && intCurrentSequence == maxSequence)
+        {
+            currentSequenceState = "last";
+        }
+        else if (intCurrentSequence == 1)
+        {
+            currentSequenceState = "first";
+        }
+        else if(intCurrentSequence != 0)
+        {
+            currentSequenceState = "mid";
+        }
+        else
+        {
+            currentSequenceState = "none";
+        }
 
-//                 Debug.Log($"Config loaded. fadeDuration: {fadeDuration}, timeoutDuration: {timeoutDuration}");
-//             }
-//             else
-//             {
-//                 Debug.LogWarning("Config file not found. Using default values.");
-//             }
-//         }
-//         catch (Exception ex)
-//         {
-//             Debug.LogError("Error loading config file: " + ex.Message);
-//         }
-//     }
-// }
+        Debug.Log(currentSequenceState);
+    }
+
+    // コンテンツが変更された際に呼び出される
+    private void ConvertButtonStateToJsonFile()
+    {
+        OnContentChanged?.Invoke();  // デリゲートの呼び出し
+    }
+
+    /// <summary>
+    /// コンフィグ用のテキストファイルを読み込み
+    /// </summary>
+    private void LoadConfigFile()
+    {
+        try
+        {
+            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            string configFilePath = Path.Combine(desktopPath, "wwo_table", "config.txt");
+
+            if (File.Exists(configFilePath))
+            {
+                string[] lines = File.ReadAllLines(configFilePath);
+
+                foreach (var line in lines)
+                {
+                    if (line.StartsWith("fadeDuration"))
+                    {
+                        string fadeValue = line.Split('=')[1].Trim().Replace("f", "");
+                        fadeDuration = float.Parse(fadeValue);
+                    }
+                    else if (line.StartsWith("timeoutDuration"))
+                    {
+                        string timeoutValue = line.Split('=')[1].Trim().Replace("f", "");
+                        timeoutDuration = float.Parse(timeoutValue);
+                    }
+                }
+
+                Debug.Log($"Config loaded. fadeDuration: {fadeDuration}, timeoutDuration: {timeoutDuration}");
+            }
+            else
+            {
+                Debug.LogWarning("Config file not found. Using default values.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError("Error loading config file: " + ex.Message);
+        }
+    }
+}

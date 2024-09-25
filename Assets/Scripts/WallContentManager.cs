@@ -54,6 +54,8 @@ public class WallContentManager : MonoBehaviour
 
     void Start()
     {
+        Cursor.visible = false;
+        
         //configファイルのロード
         LoadConfigFile(); 
 
@@ -362,7 +364,7 @@ public class WallContentManager : MonoBehaviour
 
     /// <summary>
     /// ファイルをロードする
-    /// Table固有の処理:ロードしたファイルにあわせてJsonを書き換える
+    /// 
     /// </summary>
     private async void DisplayContent(int index)
     {

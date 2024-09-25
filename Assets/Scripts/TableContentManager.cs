@@ -54,6 +54,8 @@ public class TableContentManager : MonoBehaviour
 
     void Start()
     {
+        Cursor.visible = false;
+        
         //configファイルのロード
         LoadConfigFile(); 
 
